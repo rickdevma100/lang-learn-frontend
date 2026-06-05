@@ -67,10 +67,9 @@ function App() {
     }
   };
 
-  // Handle explaining a word
-  const handleExplainWord = async (e) => {
-    e.preventDefault();
-    if (!word.trim()) return;
+  // Helper to explain a word by name
+  const explainWordByName = async (wordToExplain) => {
+    if (!wordToExplain.trim()) return;
 
     setLoadingWord(true);
     setWordError(null);
@@ -81,7 +80,7 @@ function App() {
       const response = await fetch('/api/explain_word', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word })
+        body: JSON.stringify({ word: wordToExplain })
       });
 
       if (!response.ok) {
@@ -99,6 +98,43 @@ function App() {
     } finally {
       setLoadingWord(false);
     }
+  };
+
+  // Handle explaining a word from form submission
+  const handleExplainWord = async (e) => {
+    e.preventDefault();
+    explainWordByName(word);
+  };
+
+  // Handle clicking a word in the dialogue
+  const handleWordClick = (clickedWord) => {
+    // Strip punctuation
+    const cleaned = clickedWord.replace(/[^a-zA-ZäöüÄÖÜß]/g, '');
+    if (!cleaned) return;
+    setWord(cleaned);
+    setActiveTab('explain');
+    explainWordByName(cleaned);
+  };
+
+  // Render text with clickable words
+  const renderClickableText = (text) => {
+    if (!text) return null;
+    const tokens = text.split(/(\s+|[.,!?;:"'()]+)/g);
+    return tokens.map((token, i) => {
+      const isWord = /[a-zA-ZäöüÄÖÜß]+/.test(token);
+      if (isWord) {
+        return (
+          <span 
+            key={i} 
+            className="clickable-word"
+            onClick={() => handleWordClick(token)}
+          >
+            {token}
+          </span>
+        );
+      }
+      return <span key={i}>{token}</span>;
+    });
   };
 
   // Handle recording feedback
@@ -257,7 +293,7 @@ function App() {
                     >
                       <span className="speaker-label">{turn.speaker}</span>
                       <div className="chat-bubble">
-                        {turn.german}
+                        {renderClickableText(turn.german)}
                       </div>
                     </div>
                   );
@@ -366,7 +402,16 @@ function App() {
                       <h4 className="word-section-title">Synonyms</h4>
                       <div className="synonyms-list">
                         {wordData.synonyms.map((syn, idx) => (
-                          <span key={idx} className="synonym-tag">
+                          <span 
+                            key={idx} 
+                            className="synonym-tag"
+                            onClick={() => {
+                              setWord(syn.word);
+                              explainWordByName(syn.word);
+                            }}
+                            style={{ cursor: 'pointer' }}
+                            title={`Click to explain "${syn.word}"`}
+                          >
                             <strong>{syn.word}</strong>
                             {syn.english && (
                               <span className="synonym-translation">({syn.english})</span>

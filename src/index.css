@@ -535,3 +535,33 @@ textarea.form-control {
     transform: rotate(360deg);
   }
 }
+
+/* Clickable Words & Tags */
+.clickable-word {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+.chat-bubble-wrapper.left .clickable-word:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-bubble-wrapper.right .clickable-word:hover {
+  background: rgba(255, 255, 255, 0.25);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.synonym-tag:hover {
+  border-color: var(--primary) !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
