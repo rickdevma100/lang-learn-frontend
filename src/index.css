@@ -565,3 +565,22 @@ textarea.form-control {
   transform: translateY(-1px);
   transition: all 0.2s ease;
 }
+
+/* English Translation Styles */
+.english-translation {
+  font-size: 0.82rem;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.chat-bubble-wrapper.left .english-translation {
+  color: var(--text-secondary);
+}
+
+.chat-bubble-wrapper.right .english-translation {
+  color: rgba(255, 255, 255, 0.72);
+  border-top-color: rgba(255, 255, 255, 0.12);
+}

@@ -293,7 +293,14 @@ function App() {
                     >
                       <span className="speaker-label">{turn.speaker}</span>
                       <div className="chat-bubble">
-                        {renderClickableText(turn.german)}
+                        <div className="german-text">
+                          {renderClickableText(turn.german)}
+                        </div>
+                        {turn.english && (
+                          <div className="english-translation">
+                            {turn.english}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
