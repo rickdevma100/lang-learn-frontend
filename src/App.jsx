@@ -19,6 +19,8 @@ function App() {
   const [wordError, setWordError] = useState(null);
   const [wordFeedback, setWordFeedback] = useState(null); // 'up', 'down', or null
 
+  const [clearingCache, setClearingCache] = useState(false);
+
   const messagesEndRef = useRef(null);
 
   // Auto scroll to bottom of chat
@@ -165,6 +167,32 @@ function App() {
     }
   };
 
+  // Handle clearing semantic cache
+  const handleClearCache = async () => {
+    if (!window.confirm('Are you sure you want to clear the semantic cache?')) return;
+    setClearingCache(true);
+    try {
+      const response = await fetch('/api/clear_cache', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.status === 'success') {
+        alert('Cache cleared successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to clear cache.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to clear cache.');
+    } finally {
+      setClearingCache(false);
+    }
+  };
+
   return (
     <div className="app-container">
       {/* Header Panel */}
@@ -247,6 +275,22 @@ function App() {
                   disabled={loadingDialogue}
                 >
                   {loadingDialogue ? 'Generating...' : 'Generate Dialogue'}
+                </button>
+
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ 
+                    width: '100%', 
+                    marginTop: '0.75rem', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                    color: 'var(--text-primary)', 
+                    border: '1px solid rgba(255, 255, 255, 0.2)' 
+                  }}
+                  onClick={handleClearCache}
+                  disabled={clearingCache}
+                >
+                  {clearingCache ? 'Clearing Cache...' : '🧹 Clear Semantic Cache'}
                 </button>
               </form>
             </section>
