@@ -10,8 +10,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Resolve KServe BentoML URL
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || 
-  process.env.API_URL || 
+const backendUrl = process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
   'http://lang-learn-inference-predictor.lang-learn.svc.cluster.local';
 
 console.log(`[Server] Starting frontend server on port ${PORT}`);
