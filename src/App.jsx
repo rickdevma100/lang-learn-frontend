@@ -125,7 +125,7 @@ function App() {
   // Dialogue states
   const [scenario, setScenario] = useState('ordering a hot chocolate');
   const [level, setLevel] = useState('A2');
-  const [temperature, setTemperature] = useState(0.7);
+  const [temperature, setTemperature] = useState(0.5);
   const [loadingDialogue, setLoadingDialogue] = useState(false);
   const [dialogueData, setDialogueData] = useState(null);
   const [dialogueError, setDialogueError] = useState(null);
@@ -358,13 +358,13 @@ function App() {
             className={`tab-btn ${activeTab === 'dialogue' ? 'active' : ''}`}
             onClick={() => setActiveTab('dialogue')}
           >
-            Dialogue Practice
+            💬 Dialogue Practice
           </button>
           <button 
             className={`tab-btn ${activeTab === 'explain' ? 'active' : ''}`}
             onClick={() => setActiveTab('explain')}
           >
-            Word Explainer
+            🔍 Word Explainer
           </button>
         </nav>
       </header>
@@ -378,7 +378,7 @@ function App() {
               <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Configure Scenario</h2>
               <form onSubmit={handleGenerateDialogue}>
                 <div className="form-group">
-                  <label className="form-label">Scenario / Topic</label>
+                  <label className="form-label">🎯 Scenario / Topic</label>
                   <textarea 
                     className="form-control"
                     value={scenario}
@@ -390,7 +390,7 @@ function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Difficulty (CEFR Level)</label>
+                  <label className="form-label">📊 Difficulty (CEFR Level)</label>
                   <select 
                     className="form-control"
                     value={level}
@@ -405,7 +405,7 @@ function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Creativity (Temperature: {temperature})</label>
+                  <label className="form-label">🎛️ Creativity (Temperature: {temperature})</label>
                   <input 
                     type="range" 
                     min="0.1" 
@@ -425,7 +425,7 @@ function App() {
                   style={{ width: '100%', marginTop: '1rem' }}
                   disabled={loadingDialogue}
                 >
-                  {loadingDialogue ? 'Generating...' : 'Generate Dialogue'}
+                  {loadingDialogue ? '⏳ Generating...' : '✨ Generate Dialogue'}
                 </button>
 
                 <button 
@@ -434,14 +434,14 @@ function App() {
                   style={{ 
                     width: '100%', 
                     marginTop: '0.75rem', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                    color: 'var(--text-primary)', 
-                    border: '1px solid rgba(255, 255, 255, 0.2)' 
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+                    color: 'var(--text-secondary)', 
+                    border: '1px solid rgba(255, 255, 255, 0.06)' 
                   }}
                   onClick={handleClearCache}
                   disabled={clearingCache}
                 >
-                  {clearingCache ? 'Clearing Cache...' : '🧹 Clear Semantic Cache'}
+                  {clearingCache ? '🧹 Clearing Cache...' : '🧹 Clear Semantic Cache'}
                 </button>
               </form>
             </section>
@@ -452,8 +452,8 @@ function App() {
                 <h3>Conversation Display</h3>
                 {dialogueData && (
                   <div className="chat-meta">
-                    <span className="meta-badge">Latency: {dialogueData.latency_s}s</span>
-                    <span className="meta-badge highlight">CEFR: {dialogueData.level || level} (Score: {dialogueData.cefr_score})</span>
+                    <span className="meta-badge">⏱️ Latency: {dialogueData.latency_s}s</span>
+                    <span className="meta-badge highlight">🎯 CEFR: {dialogueData.level || level} (Score: {dialogueData.cefr_score})</span>
                   </div>
                 )}
               </div>
