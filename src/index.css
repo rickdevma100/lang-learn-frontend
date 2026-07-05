@@ -754,6 +754,61 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
   border-top-color: rgba(255, 255, 255, 0.12);
 }
 
+/* TTS listen button */
+.tts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  gap: 4px;
+}
+
+.tts-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+  transform: scale(1.05);
+}
+
+.tts-btn.tts-playing {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: #c4b5fd;
+  animation: tts-pulse 1.4s ease-in-out infinite;
+}
+
+.tts-btn.tts-loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.tts-btn:disabled {
+  cursor: not-allowed;
+}
+
+@keyframes tts-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+}
+
+/* Inline TTS button variant — sits next to word titles, sentences, synonyms */
+.tts-btn-inline {
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  margin-top: 0;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* Vocab Loader Card */
 .vocab-loader-card {
   margin-top: 1.5rem;

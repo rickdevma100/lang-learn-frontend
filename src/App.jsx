@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const A2_VOCAB_LOADER_LIST = [
   { german: "Ja natürlich", english: "Yes, of course" },
@@ -139,8 +139,18 @@ function App() {
   const [wordFeedback, setWordFeedback] = useState(null); // 'up', 'down', or null
 
   const [clearingCache, setClearingCache] = useState(false);
-
   const [currentVocab, setCurrentVocab] = useState(null);
+
+  // TTS state
+  const [ttsLoadingIndex, setTtsLoadingIndex] = useState(null);  // index being fetched
+  const [ttsPlayingIndex, setTtsPlayingIndex] = useState(null);  // index currently playing
+  const audioCacheRef = useRef(new Map());  // text -> object URL (avoids re-fetching)
+  const currentAudioRef = useRef(null);     // currently playing Audio element
+
+  // Word TTS state (separate from dialogue TTS)
+  const [wordTtsLoading, setWordTtsLoading] = useState(null); // cache key being fetched
+  const [wordTtsPlaying, setWordTtsPlaying] = useState(null); // cache key currently playing
+  const wordAudioRef = useRef(null);        // currently playing word Audio element
 
   useEffect(() => {
     let intervalId = null;
@@ -288,6 +298,132 @@ function App() {
       }
       return <span key={i}>{token}</span>;
     });
+  };
+
+  // Helper: map dialogue turn → speaker role for voice selection
+  const getSpeakerRole = (turn) => {
+    return turn.speaker.toLowerCase().includes('a') ? 'person_a' : 'person_b';
+  };
+
+  // Play TTS audio for a single dialogue line (with Redis-backed caching via /api/tts)
+  const playTtsLine = useCallback(async (turn, index) => {
+    // Stop any currently playing audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+      if (ttsPlayingIndex === index) {
+        setTtsPlayingIndex(null);
+        return; // toggle off when clicking the same button again
+      }
+    }
+    setTtsPlayingIndex(null);
+
+    const cacheKey = `${turn.german}|${level}|${getSpeakerRole(turn)}`;
+    let objectUrl = audioCacheRef.current.get(cacheKey);
+
+    if (!objectUrl) {
+      setTtsLoadingIndex(index);
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: turn.german,
+            language: (dialogueData && dialogueData.language) || 'German',
+            level,
+            speaker: getSpeakerRole(turn),
+          }),
+        });
+        if (!res.ok) throw new Error(`TTS request failed: ${res.status}`);
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, objectUrl);
+      } catch (err) {
+        console.error('TTS error:', err);
+        return;
+      } finally {
+        setTtsLoadingIndex(null);
+      }
+    }
+
+    const audio = new Audio(objectUrl);
+    currentAudioRef.current = audio;
+    setTtsPlayingIndex(index);
+    audio.play();
+    audio.onended = () => {
+      setTtsPlayingIndex(null);
+      currentAudioRef.current = null;
+    };
+  }, [dialogueData, level, ttsPlayingIndex]);
+
+  // Play TTS for a single word / sentence in the Word Explainer
+  const playWordTts = useCallback(async (text) => {
+    const cacheKey = `word|${text}`;
+
+    // Toggle off if same item is playing
+    if (wordAudioRef.current) {
+      wordAudioRef.current.pause();
+      wordAudioRef.current = null;
+      if (wordTtsPlaying === cacheKey) {
+        setWordTtsPlaying(null);
+        return;
+      }
+    }
+    setWordTtsPlaying(null);
+
+    let objectUrl = audioCacheRef.current.get(cacheKey);
+
+    if (!objectUrl) {
+      setWordTtsLoading(cacheKey);
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            language: 'German',
+            level: 'A2',
+            speaker: 'default',
+          }),
+        });
+        if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, objectUrl);
+      } catch (err) {
+        console.error('Word TTS error:', err);
+        return;
+      } finally {
+        setWordTtsLoading(null);
+      }
+    }
+
+    const audio = new Audio(objectUrl);
+    wordAudioRef.current = audio;
+    setWordTtsPlaying(cacheKey);
+    audio.play();
+    audio.onended = () => {
+      setWordTtsPlaying(null);
+      wordAudioRef.current = null;
+    };
+  }, [wordTtsPlaying]);
+
+  // Helper: small inline TTS button for the word explainer
+  const WordTtsBtn = ({ text }) => {
+    const key = `word|${text}`;
+    const isLoading = wordTtsLoading === key;
+    const isPlaying = wordTtsPlaying === key;
+    return (
+      <button
+        className={`tts-btn tts-btn-inline ${isPlaying ? 'tts-playing' : ''} ${isLoading ? 'tts-loading' : ''}`}
+        onClick={(e) => { e.stopPropagation(); playWordTts(text); }}
+        disabled={isLoading}
+        title={isPlaying ? 'Stop' : 'Listen'}
+        aria-label={isPlaying ? 'Stop audio' : `Listen to: ${text}`}
+      >
+        {isLoading ? '⏳' : isPlaying ? '⏹' : '🔊'}
+      </button>
+    );
   };
 
   // Handle recording feedback
@@ -494,6 +630,8 @@ function App() {
 
                 {dialogueData && dialogueData.dialogue && dialogueData.dialogue.map((turn, index) => {
                   const isPersonA = turn.speaker.toLowerCase().includes('a');
+                  const isLoading = ttsLoadingIndex === index;
+                  const isPlaying = ttsPlayingIndex === index;
                   return (
                     <div 
                       key={index} 
@@ -509,6 +647,15 @@ function App() {
                             {turn.english}
                           </div>
                         )}
+                        <button
+                          className={`tts-btn ${isPlaying ? 'tts-playing' : ''} ${isLoading ? 'tts-loading' : ''}`}
+                          onClick={() => playTtsLine(turn, index)}
+                          disabled={isLoading}
+                          title={isPlaying ? 'Stop' : 'Listen'}
+                          aria-label={`${isPlaying ? 'Stop' : 'Listen to'} ${turn.speaker}`}
+                        >
+                          {isLoading ? '⏳' : isPlaying ? '⏹' : '🔊'}
+                        </button>
                       </div>
                     </div>
                   );
@@ -598,7 +745,10 @@ function App() {
                 <div className="word-card">
                   <div className="word-header">
                     <div className="word-title-group">
-                      <h2>{wordData.word || word}</h2>
+                      <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {wordData.word || word}
+                        <WordTtsBtn text={wordData.word || word} />
+                      </h2>
                       <span className="part-of-speech">{wordData.part_of_speech || 'N/A'}</span>
                     </div>
                     {wordData.latency_s && (
@@ -616,7 +766,10 @@ function App() {
                       <h4 className="word-section-title">Example Usage</h4>
                       <div className="example-box">
                         {wordData.example_sentence_german && (
-                          <p className="example-german">{wordData.example_sentence_german}</p>
+                          <p className="example-german" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {wordData.example_sentence_german}
+                            <WordTtsBtn text={wordData.example_sentence_german} />
+                          </p>
                         )}
                         {wordData.example_sentence_english && (
                           <p className="example-english">{wordData.example_sentence_english}</p>
@@ -644,6 +797,7 @@ function App() {
                             {syn.english && (
                               <span className="synonym-translation">({syn.english})</span>
                             )}
+                            <WordTtsBtn text={syn.word} />
                           </span>
                         ))}
                       </div>
