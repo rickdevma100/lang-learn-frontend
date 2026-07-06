@@ -152,6 +152,13 @@ function App() {
   const [wordTtsPlaying, setWordTtsPlaying] = useState(null); // cache key currently playing
   const wordAudioRef = useRef(null);        // currently playing word Audio element
 
+  // Practice Mode state
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceHiddenIndices, setPracticeHiddenIndices] = useState([]);
+  const [practiceInputs, setPracticeInputs] = useState({});
+  const [practiceResults, setPracticeResults] = useState({});
+  const [practiceChecking, setPracticeChecking] = useState(null);
+
   useEffect(() => {
     let intervalId = null;
     const isLoading = loadingDialogue || loadingWord;
@@ -426,6 +433,100 @@ function App() {
     );
   };
 
+  // ── Practice Mode handlers ──
+  const togglePracticeMode = () => {
+    if (practiceMode) {
+      // Turn off — reset all practice state
+      setPracticeMode(false);
+      setPracticeHiddenIndices([]);
+      setPracticeInputs({});
+      setPracticeResults({});
+      setPracticeChecking(null);
+    } else {
+      // Turn on — randomly hide ~50% of turns
+      if (!dialogueData || !dialogueData.dialogue) return;
+      const indices = [];
+      dialogueData.dialogue.forEach((_, i) => {
+        if (Math.random() < 0.5) indices.push(i);
+      });
+      // Ensure at least 1 turn is hidden
+      if (indices.length === 0 && dialogueData.dialogue.length > 0) {
+        indices.push(Math.floor(Math.random() * dialogueData.dialogue.length));
+      }
+      setPracticeHiddenIndices(indices);
+      setPracticeInputs({});
+      setPracticeResults({});
+      setPracticeChecking(null);
+      setPracticeMode(true);
+    }
+  };
+
+  const handlePracticeInputChange = (index, value) => {
+    setPracticeInputs(prev => ({ ...prev, [index]: value }));
+  };
+
+  const handlePracticeCheck = async (index) => {
+    const userText = (practiceInputs[index] || '').trim();
+    if (!userText || !dialogueData) return;
+
+    setPracticeChecking(index);
+
+    try {
+      // Build preceding context (up to 3 previous turns)
+      const dialogue = dialogueData.dialogue;
+      const contextStart = Math.max(0, index - 3);
+      const contextLines = dialogue.slice(contextStart, index)
+        .map(t => `${t.speaker}: ${t.german}`)
+        .join('\n');
+
+      const res = await fetch('/api/practice_check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_text: userText,
+          expected_english: dialogue[index].english || '',
+          scenario,
+          speaker: dialogue[index].speaker,
+          preceding_context: contextLines,
+          language: 'German',
+          level,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+      const data = await res.json();
+
+      if (data.error) {
+        setPracticeResults(prev => ({
+          ...prev,
+          [index]: { type: 'error', feedback: data.error, score: 0 },
+        }));
+      } else {
+        let type = 'correct';
+        if (!data.on_topic) type = 'error';
+        else if (!data.grammar_ok) type = 'warning';
+
+        setPracticeResults(prev => ({
+          ...prev,
+          [index]: {
+            type,
+            feedback: data.feedback,
+            corrected_text: data.corrected_text,
+            score: data.score,
+          },
+        }));
+      }
+    } catch (err) {
+      console.error('Practice check error:', err);
+      setPracticeResults(prev => ({
+        ...prev,
+        [index]: { type: 'error', feedback: err.message || 'Failed to check.', score: 0 },
+      }));
+    } finally {
+      setPracticeChecking(null);
+    }
+  };
+
   // Handle recording feedback
   const handleFeedback = async (endpoint, type) => {
     // Determine current state and set local state
@@ -590,6 +691,13 @@ function App() {
                   <div className="chat-meta">
                     <span className="meta-badge">⏱️ Latency: {dialogueData.latency_s}s</span>
                     <span className="meta-badge highlight">🎯 CEFR: {dialogueData.level || level} (Score: {dialogueData.cefr_score})</span>
+                    <button
+                      className={`practice-mode-btn ${practiceMode ? 'active' : ''}`}
+                      onClick={togglePracticeMode}
+                      title={practiceMode ? 'Exit Practice Mode' : 'Enter Practice Mode'}
+                    >
+                      {practiceMode ? '✏️ Exit Practice' : '🎯 Practice Mode'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -630,8 +738,12 @@ function App() {
 
                 {dialogueData && dialogueData.dialogue && dialogueData.dialogue.map((turn, index) => {
                   const isPersonA = turn.speaker.toLowerCase().includes('a');
-                  const isLoading = ttsLoadingIndex === index;
-                  const isPlaying = ttsPlayingIndex === index;
+                  const isTtsLoading = ttsLoadingIndex === index;
+                  const isTtsPlaying = ttsPlayingIndex === index;
+                  const isHidden = practiceMode && practiceHiddenIndices.includes(index);
+                  const result = practiceResults[index];
+                  const isChecking = practiceChecking === index;
+
                   return (
                     <div 
                       key={index} 
@@ -639,23 +751,71 @@ function App() {
                     >
                       <span className="speaker-label">{turn.speaker}</span>
                       <div className="chat-bubble">
-                        <div className="german-text">
-                          {renderClickableText(turn.german)}
-                        </div>
-                        {turn.english && (
-                          <div className="english-translation">
-                            {turn.english}
+                        {isHidden ? (
+                          /* ── Practice: hidden turn with input ── */
+                          <div className="practice-input-wrapper">
+                            <textarea
+                              className={`practice-input ${isChecking ? 'practice-checking' : ''}`}
+                              value={practiceInputs[index] || ''}
+                              onChange={(e) => handlePracticeInputChange(index, e.target.value)}
+                              placeholder="Write your German sentence here…"
+                              disabled={isChecking}
+                              rows={2}
+                            />
+                            {turn.english && (
+                              <div className="practice-hint">
+                                💡 Hint: {turn.english}
+                              </div>
+                            )}
+                            <button
+                              className="practice-check-btn"
+                              onClick={() => handlePracticeCheck(index)}
+                              disabled={isChecking || !(practiceInputs[index] || '').trim()}
+                            >
+                              {isChecking ? '⏳ Checking…' : '✓ Check'}
+                            </button>
+                            {result && (
+                              <div className={`practice-feedback ${result.type}`}>
+                                <span className="pf-icon">
+                                  {result.type === 'correct' ? '✅' : result.type === 'warning' ? '⚠️' : '❌'}
+                                </span>
+                                <span>{result.feedback}</span>
+                                {result.score != null && (
+                                  <span className={`practice-score-badge ${result.score >= 0.8 ? 'high' : result.score >= 0.5 ? 'medium' : 'low'}`}>
+                                    {result.score.toFixed(1)}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {result && result.corrected_text && (
+                              <div className="practice-feedback warning" style={{ marginTop: '4px' }}>
+                                <span className="pf-icon">📝</span>
+                                <span>Correction: <strong>{result.corrected_text}</strong></span>
+                              </div>
+                            )}
                           </div>
+                        ) : (
+                          /* ── Normal display ── */
+                          <>
+                            <div className="german-text">
+                              {renderClickableText(turn.german)}
+                            </div>
+                            {turn.english && (
+                              <div className="english-translation">
+                                {turn.english}
+                              </div>
+                            )}
+                            <button
+                              className={`tts-btn ${isTtsPlaying ? 'tts-playing' : ''} ${isTtsLoading ? 'tts-loading' : ''}`}
+                              onClick={() => playTtsLine(turn, index)}
+                              disabled={isTtsLoading}
+                              title={isTtsPlaying ? 'Stop' : 'Listen'}
+                              aria-label={`${isTtsPlaying ? 'Stop' : 'Listen to'} ${turn.speaker}`}
+                            >
+                              {isTtsLoading ? '⏳' : isTtsPlaying ? '⏹' : '🔊'}
+                            </button>
+                          </>
                         )}
-                        <button
-                          className={`tts-btn ${isPlaying ? 'tts-playing' : ''} ${isLoading ? 'tts-loading' : ''}`}
-                          onClick={() => playTtsLine(turn, index)}
-                          disabled={isLoading}
-                          title={isPlaying ? 'Stop' : 'Listen'}
-                          aria-label={`${isPlaying ? 'Stop' : 'Listen to'} ${turn.speaker}`}
-                        >
-                          {isLoading ? '⏳' : isPlaying ? '⏹' : '🔊'}
-                        </button>
                       </div>
                     </div>
                   );

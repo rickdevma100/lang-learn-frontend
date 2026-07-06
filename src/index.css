@@ -852,3 +852,190 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
   font-style: italic;
   font-weight: 400;
 }
+
+/* ──── Practice Mode ──── */
+
+/* Toggle button in chat header */
+.practice-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.practice-mode-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--accent);
+}
+
+.practice-mode-btn.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--accent);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+}
+
+/* Practice input replacing hidden German text */
+.practice-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.practice-input {
+  width: 100%;
+  min-height: 44px;
+  background: rgba(10, 11, 18, 0.8);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  resize: none;
+  transition: all 0.25s ease;
+  line-height: 1.5;
+}
+
+.practice-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.practice-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.practice-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Check button */
+.practice-check-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-gradient);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px var(--accent-glow);
+  align-self: flex-start;
+}
+
+.practice-check-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.35);
+}
+
+.practice-check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Feedback banners */
+.practice-feedback {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  animation: slideUp 0.3s ease-out;
+}
+
+.practice-feedback .pf-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.practice-feedback.correct {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.practice-feedback.warning {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+}
+
+.practice-feedback.error {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #fda4af;
+}
+
+/* Score badge */
+.practice-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.practice-score-badge.high {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.practice-score-badge.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.practice-score-badge.low {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+/* Practice hint — English translation styling in practice mode */
+.practice-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 6px 0 2px;
+}
+
+/* Loading state for practice check */
+@keyframes practiceCheckPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.practice-checking {
+  animation: practiceCheckPulse 1.2s ease-in-out infinite;
+}
