@@ -159,6 +159,11 @@ function App() {
   const [practiceResults, setPracticeResults] = useState({});
   const [practiceChecking, setPracticeChecking] = useState(null);
 
+  // STT (Speech-to-Text) state
+  const [sttRecording, setSttRecording] = useState(null);    // index currently recording
+  const [sttLoading, setSttLoading] = useState(null);        // index being transcribed
+  const mediaRecorderRef = useRef(null);
+
   useEffect(() => {
     let intervalId = null;
     const isLoading = loadingDialogue || loadingWord;
@@ -465,6 +470,73 @@ function App() {
     setPracticeInputs(prev => ({ ...prev, [index]: value }));
   };
 
+  const handleMicClick = async (index) => {
+    // If already recording this index, stop
+    if (sttRecording === index) {
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      setSttRecording(null);
+      return;
+    }
+
+    // If recording a different index, stop that first
+    if (sttRecording !== null && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setSttRecording(null);
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks to release the microphone
+        stream.getTracks().forEach(t => t.stop());
+
+        if (chunks.length === 0) return;
+
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+        setSttLoading(index);
+
+        try {
+          const formData = new FormData();
+          formData.append('audio', blob, 'recording.webm');
+
+          const res = await fetch('/api/stt', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) throw new Error(`Server returned ${res.status}`);
+          const data = await res.json();
+
+          if (data.text) {
+            setPracticeInputs(prev => ({ ...prev, [index]: data.text }));
+          } else if (data.error) {
+            console.error('STT error:', data.error);
+          }
+        } catch (err) {
+          console.error('STT fetch error:', err);
+        } finally {
+          setSttLoading(null);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setSttRecording(index);
+    } catch (err) {
+      console.error('Microphone access denied:', err);
+      alert('Microphone access is required for voice input. Please allow microphone access in your browser settings.');
+    }
+  };
+
   const handlePracticeCheck = async (index) => {
     const userText = (practiceInputs[index] || '').trim();
     if (!userText || !dialogueData) return;
@@ -754,14 +826,24 @@ function App() {
                         {isHidden ? (
                           /* ── Practice: hidden turn with input ── */
                           <div className="practice-input-wrapper">
-                            <textarea
-                              className={`practice-input ${isChecking ? 'practice-checking' : ''}`}
-                              value={practiceInputs[index] || ''}
-                              onChange={(e) => handlePracticeInputChange(index, e.target.value)}
-                              placeholder="Write your German sentence here…"
-                              disabled={isChecking}
-                              rows={2}
-                            />
+                            <div className="practice-input-row">
+                              <textarea
+                                className={`practice-input ${isChecking ? 'practice-checking' : ''}`}
+                                value={practiceInputs[index] || ''}
+                                onChange={(e) => handlePracticeInputChange(index, e.target.value)}
+                                placeholder={sttLoading === index ? 'Transcribing…' : 'Write or speak your German sentence…'}
+                                disabled={isChecking || sttLoading === index}
+                                rows={2}
+                              />
+                              <button
+                                className={`stt-mic-btn ${sttRecording === index ? 'recording' : ''} ${sttLoading === index ? 'transcribing' : ''}`}
+                                onClick={() => handleMicClick(index)}
+                                disabled={isChecking || sttLoading === index}
+                                title={sttRecording === index ? 'Stop recording' : 'Record voice'}
+                              >
+                                {sttLoading === index ? '⏳' : sttRecording === index ? '⏹' : '🎤'}
+                              </button>
+                            </div>
                             {turn.english && (
                               <div className="practice-hint">
                                 💡 Hint: {turn.english}

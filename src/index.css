@@ -1039,3 +1039,70 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
 .practice-checking {
   animation: practiceCheckPulse 1.2s ease-in-out infinite;
 }
+
+/* ──── STT Mic Button ──── */
+
+.practice-input-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.practice-input-row .practice-input {
+  flex: 1;
+}
+
+.stt-mic-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+
+.stt-mic-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--primary);
+}
+
+.stt-mic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Recording state — red pulse */
+.stt-mic-btn.recording {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.5);
+  color: #f43f5e;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.3);
+  animation: micPulse 1s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
+  }
+}
+
+/* Transcribing state */
+.stt-mic-btn.transcribing {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--accent);
+  animation: practiceCheckPulse 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
