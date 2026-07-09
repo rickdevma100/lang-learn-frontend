@@ -141,6 +141,23 @@ function App() {
   const [clearingCache, setClearingCache] = useState(false);
   const [currentVocab, setCurrentVocab] = useState(null);
 
+  // Theme state: dark or light
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return systemPrefersDark ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // TTS state
   const [ttsLoadingIndex, setTtsLoadingIndex] = useState(null);  // index being fetched
   const [ttsPlayingIndex, setTtsPlayingIndex] = useState(null);  // index currently playing
@@ -170,7 +187,7 @@ function App() {
 
     if (isLoading) {
       let pool = [...A2_VOCAB_LOADER_LIST];
-      
+
       const selectNextVocab = () => {
         if (pool.length === 0) {
           pool = [...A2_VOCAB_LOADER_LIST];
@@ -299,8 +316,8 @@ function App() {
       const isWord = /[a-zA-ZäöüÄÖÜß]+/.test(token);
       if (isWord) {
         return (
-          <span 
-            key={i} 
+          <span
+            key={i}
             className="clickable-word"
             onClick={() => handleWordClick(token)}
           >
@@ -661,21 +678,48 @@ function App() {
           <div className="brand-icon">L</div>
           <h1 className="brand-title">LangLearn</h1>
         </div>
-        
-        <nav className="nav-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'dialogue' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dialogue')}
+
+        <div className="header-right">
+          <nav className="nav-tabs">
+            <button
+              className={`tab-btn ${activeTab === 'dialogue' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dialogue')}
+            >
+              💬 Dialogue Practice
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'explain' ? 'active' : ''}`}
+              onClick={() => setActiveTab('explain')}
+            >
+              🔍 Word Explainer
+            </button>
+          </nav>
+
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle dark/light theme"
           >
-            💬 Dialogue Practice
+            {theme === 'dark' ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'explain' ? 'active' : ''}`}
-            onClick={() => setActiveTab('explain')}
-          >
-            🔍 Word Explainer
-          </button>
-        </nav>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -688,7 +732,7 @@ function App() {
               <form onSubmit={handleGenerateDialogue}>
                 <div className="form-group">
                   <label className="form-label">🎯 Scenario / Topic</label>
-                  <textarea 
+                  <textarea
                     className="form-control"
                     value={scenario}
                     onChange={(e) => setScenario(e.target.value)}
@@ -700,7 +744,7 @@ function App() {
 
                 <div className="form-group">
                   <label className="form-label">📊 Difficulty (CEFR Level)</label>
-                  <select 
+                  <select
                     className="form-control"
                     value={level}
                     onChange={(e) => setLevel(e.target.value)}
@@ -715,10 +759,10 @@ function App() {
 
                 <div className="form-group">
                   <label className="form-label">🎛️ Creativity (Temperature: {temperature})</label>
-                  <input 
-                    type="range" 
-                    min="0.1" 
-                    max="1.0" 
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1.0"
                     step="0.1"
                     className="form-control"
                     style={{ padding: '0' }}
@@ -728,24 +772,24 @@ function App() {
                   />
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="btn" 
+                <button
+                  type="submit"
+                  className="btn"
                   style={{ width: '100%', marginTop: '1rem' }}
                   disabled={loadingDialogue}
                 >
                   {loadingDialogue ? '⏳ Generating...' : '✨ Generate Dialogue'}
                 </button>
 
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  style={{ 
-                    width: '100%', 
-                    marginTop: '0.75rem', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
-                    color: 'var(--text-secondary)', 
-                    border: '1px solid rgba(255, 255, 255, 0.06)' 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    marginTop: '0.75rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
                   }}
                   onClick={handleClearCache}
                   disabled={clearingCache}
@@ -817,8 +861,8 @@ function App() {
                   const isChecking = practiceChecking === index;
 
                   return (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className={`chat-bubble-wrapper ${isPersonA ? 'left' : 'right'}`}
                     >
                       <span className="speaker-label">{turn.speaker}</span>
@@ -909,14 +953,14 @@ function App() {
                 <div className="feedback-container">
                   <span className="feedback-question">Is this dialogue helpful?</span>
                   <div className="feedback-actions">
-                    <button 
+                    <button
                       className={`feedback-btn ${dialogueFeedback === 'up' ? 'active-up' : ''}`}
                       onClick={() => handleFeedback('scenario_dialogue', 'up')}
                       title="Thumbs Up"
                     >
                       👍
                     </button>
-                    <button 
+                    <button
                       className={`feedback-btn ${dialogueFeedback === 'down' ? 'active-down' : ''}`}
                       onClick={() => handleFeedback('scenario_dialogue', 'down')}
                       title="Thumbs Down"
@@ -933,8 +977,8 @@ function App() {
             {/* Word Explainer input */}
             <section className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
               <form onSubmit={handleExplainWord} className="word-search-container">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="form-control"
                   value={word}
                   onChange={(e) => setWord(e.target.value)}
@@ -1025,8 +1069,8 @@ function App() {
                       <h4 className="word-section-title">Synonyms</h4>
                       <div className="synonyms-list">
                         {wordData.synonyms.map((syn, idx) => (
-                          <span 
-                            key={idx} 
+                          <span
+                            key={idx}
                             className="synonym-tag"
                             onClick={() => {
                               setWord(syn.word);
@@ -1049,14 +1093,14 @@ function App() {
                   <div className="feedback-container" style={{ margin: '2rem -2rem -2rem -2rem', borderRadius: '0 0 16px 16px' }}>
                     <span className="feedback-question">Is this explanation accurate and helpful?</span>
                     <div className="feedback-actions">
-                      <button 
+                      <button
                         className={`feedback-btn ${wordFeedback === 'up' ? 'active-up' : ''}`}
                         onClick={() => handleFeedback('explain_word', 'up')}
                         title="Thumbs Up"
                       >
                         👍
                       </button>
-                      <button 
+                      <button
                         className={`feedback-btn ${wordFeedback === 'down' ? 'active-down' : ''}`}
                         onClick={() => handleFeedback('explain_word', 'down')}
                         title="Thumbs Down"

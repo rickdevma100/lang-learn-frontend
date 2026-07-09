@@ -24,6 +24,103 @@
   --font-body: 'Inter', -apple-system, sans-serif;
 }
 
+/* Light Theme Variables */
+[data-theme="light"] {
+  --bg-dark: #f1f5f9; /* Slate 100 */
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-input: rgba(255, 255, 255, 0.9);
+  
+  --primary: #4f46e5; /* Indigo 600 */
+  --primary-hover: #3730a3;
+  --primary-glow: rgba(79, 70, 229, 0.12);
+  
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #334155; /* Slate 700 */
+  --text-muted: #64748b; /* Slate 500 */
+  --border: rgba(15, 23, 42, 0.08);
+  --border-focus: rgba(79, 70, 229, 0.4);
+}
+
+/* Smooth Theme Transitions */
+body, 
+.glass-panel, 
+.form-control, 
+.tab-btn, 
+.theme-toggle-btn, 
+.chat-bubble, 
+.brand-title,
+.feedback-container {
+  transition: background-color 0.3s ease, background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="light"] body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%);
+}
+
+[data-theme="light"] .brand-title {
+  background: linear-gradient(to right, #0f172a 30%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .nav-tabs {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .tab-btn:hover {
+  color: var(--primary);
+}
+
+[data-theme="light"] .tab-btn.active {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+}
+
+[data-theme="light"] .form-control:focus {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px var(--primary-glow), inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] .chat-bubble-wrapper.left .chat-bubble {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] input[type="range"].form-control {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .chat-bubble-wrapper.left .clickable-word:hover {
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+[data-theme="light"] .theme-toggle-btn {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .feedback-container {
+  background: rgba(0, 0, 0, 0.02);
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -109,6 +206,38 @@ h1, h2, h3, h4 {
   margin-bottom: 3rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn svg {
+  display: block;
 }
 
 .brand {
@@ -1105,4 +1234,143 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
   color: var(--accent);
   animation: practiceCheckPulse 1.2s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* ──── Mobile & Responsive Adjustments ──── */
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1.25rem 1rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .brand-title {
+    font-size: 1.6rem;
+  }
+
+  .header-right {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .nav-tabs {
+    flex: 1;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 0.85rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Chat / dialogue container */
+  .chat-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.25rem;
+  }
+
+  .chat-header h3 {
+    font-size: 1.15rem;
+  }
+
+  .chat-meta {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chat-meta .meta-badge {
+    flex: 1 1 calc(50% - 0.25rem);
+    text-align: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+  }
+
+  .chat-meta .practice-mode-btn {
+    flex: 1 1 100%;
+    text-align: center;
+    justify-content: center;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    padding: 8px 12px;
+  }
+
+  .chat-messages {
+    padding: 1.25rem 1rem;
+    gap: 1.25rem;
+  }
+
+  .chat-bubble-wrapper {
+    max-width: 90%; /* More room for text on mobile */
+  }
+
+  .chat-bubble {
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .practice-input-row {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Word Explainer mobile search */
+  .word-search-container {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .word-search-container .btn {
+    width: 100%;
+  }
+
+  .word-card {
+    padding: 1.5rem;
+  }
+
+  .word-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .word-title-group h2 {
+    font-size: 2rem;
+  }
+
+  .feedback-container {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.25rem 1rem;
+  }
 }
