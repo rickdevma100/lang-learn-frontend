@@ -17,7 +17,7 @@ const backendUrl = process.env.NEXT_PUBLIC_API_URL ||
 console.log(`[Server] Starting frontend server on port ${PORT}`);
 console.log(`[Server] Proxying API calls (/api/*) to: ${backendUrl}`);
 
-// Proxy API requests
+// Proxy API requests (supports SSE streaming)
 app.use(
   '/api',
   createProxyMiddleware({
@@ -31,6 +31,15 @@ app.use(
     },
     onProxyRes: (proxyRes, req, res) => {
       console.log(`[Proxy] Received status ${proxyRes.statusCode} from backend`);
+      // Ensure SSE responses are not buffered
+      const contentType = proxyRes.headers['content-type'] || '';
+      if (contentType.includes('text/event-stream') || contentType.includes('text/plain')) {
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');  // Disable nginx buffering
+        proxyRes.headers['cache-control'] = 'no-cache';
+        proxyRes.headers['connection'] = 'keep-alive';
+      }
     },
     onError: (err, req, res) => {
       console.error('[Proxy Error]', err);

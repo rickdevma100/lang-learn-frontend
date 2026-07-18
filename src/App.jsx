@@ -131,6 +131,11 @@ function App() {
   const [dialogueError, setDialogueError] = useState(null);
   const [dialogueFeedback, setDialogueFeedback] = useState(null); // 'up', 'down', or null
 
+  // Streaming state
+  const [streamingTurns, setStreamingTurns] = useState([]);   // turns received so far during SSE
+  const [streamingMeta, setStreamingMeta] = useState(null);   // metadata from the 'done' event
+  const [isStreaming, setIsStreaming] = useState(false);       // true while receiving SSE events
+
   // Word Explainer states
   const [word, setWord] = useState('Ausbildung');
   const [loadingWord, setLoadingWord] = useState(false);
@@ -213,25 +218,35 @@ function App() {
 
   const messagesEndRef = useRef(null);
 
-  // Auto scroll to bottom of chat
+  // Auto scroll to bottom of chat (also triggers when new streaming turns arrive)
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [dialogueData, loadingDialogue]);
+  }, [dialogueData, loadingDialogue, streamingTurns]);
 
-  // Handle generating a new dialogue
+  // Handle generating a new dialogue via SSE streaming
   const handleGenerateDialogue = async (e) => {
     e.preventDefault();
     if (!scenario.trim()) return;
 
+    // Reset all state
     setLoadingDialogue(true);
+    setIsStreaming(false);
+    setStreamingTurns([]);
+    setStreamingMeta(null);
     setDialogueError(null);
     setDialogueData(null);
     setDialogueFeedback(null);
+    // Reset practice mode state
+    setPracticeMode(false);
+    setPracticeHiddenIndices([]);
+    setPracticeInputs({});
+    setPracticeResults({});
+    setPracticeChecking(null);
 
     try {
-      const response = await fetch('/api/scenario_dialogue', {
+      const response = await fetch('/api/scenario_dialogue_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -246,15 +261,93 @@ function App() {
         throw new Error(`Server returned status ${response.status}`);
       }
 
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      // Switch from loading spinner to streaming mode
+      setLoadingDialogue(false);
+      setIsStreaming(true);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const accumulatedTurns = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE events (each ends with \n\n)
+        const events = buffer.split('\n\n');
+        buffer = events.pop(); // Keep incomplete event in buffer
+
+        for (const eventStr of events) {
+          const trimmed = eventStr.trim();
+          if (!trimmed) continue;
+
+          // Parse SSE data lines
+          const dataLine = trimmed.split('\n')
+            .find(line => line.startsWith('data: '));
+          if (!dataLine) continue;
+
+          const jsonStr = dataLine.slice(6); // Remove 'data: '
+          let event;
+          try {
+            event = JSON.parse(jsonStr);
+          } catch {
+            console.warn('Failed to parse SSE event:', jsonStr);
+            continue;
+          }
+
+          if (event.type === 'turn') {
+            accumulatedTurns.push(event.turn);
+            setStreamingTurns([...accumulatedTurns]);
+          } else if (event.type === 'done') {
+            setStreamingMeta(event);
+            // Build final dialogueData for downstream features (TTS, Practice, etc.)
+            setDialogueData({
+              title: 'Conversation',
+              level: event.level,
+              cefr_score: event.cefr_score,
+              latency_s: event.latency_s,
+              dialogue: [...accumulatedTurns],
+              cached: event.cached,
+              cache_similarity: event.cache_similarity,
+            });
+            setIsStreaming(false);
+          } else if (event.type === 'error') {
+            throw new Error(event.error || 'Stream error');
+          }
+        }
       }
-      setDialogueData(data);
     } catch (err) {
-      console.error(err);
+      console.error('Streaming error:', err);
+      // Try falling back to non-streaming endpoint
+      try {
+        const fallbackRes = await fetch('/api/scenario_dialogue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scenario,
+            level,
+            temperature: parseFloat(temperature),
+            language: 'German'
+          })
+        });
+        if (fallbackRes.ok) {
+          const data = await fallbackRes.json();
+          if (!data.error) {
+            setDialogueData(data);
+            setIsStreaming(false);
+            setLoadingDialogue(false);
+            return;
+          }
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+      }
       setDialogueError(err.message || 'Failed to generate dialogue. Please try again.');
     } finally {
+      setIsStreaming(false);
       setLoadingDialogue(false);
     }
   };
@@ -845,10 +938,40 @@ function App() {
                   </div>
                 )}
 
-                {!loadingDialogue && !dialogueData && !dialogueError && (
+                {!loadingDialogue && !isStreaming && !dialogueData && !dialogueError && (
                   <div className="chat-empty">
                     <div className="chat-empty-icon">💬</div>
                     <p>Describe a scenario on the left and click <strong>Generate Dialogue</strong> to start practicing.</p>
+                  </div>
+                )}
+
+                {/* Streaming turns: render each as a chat bubble as it arrives */}
+                {isStreaming && streamingTurns.map((turn, index) => {
+                  const isPersonA = turn.speaker.toLowerCase().includes('a');
+                  return (
+                    <div
+                      key={`stream-${index}`}
+                      className={`chat-bubble-wrapper ${isPersonA ? 'left' : 'right'} streaming-new`}
+                    >
+                      <span className="speaker-label">{turn.speaker}</span>
+                      <div className="chat-bubble">
+                        <div className="german-text">
+                          {renderClickableText(turn.german)}
+                        </div>
+                        {turn.english && (
+                          <div className="english-translation">
+                            {turn.english}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Streaming typing indicator */}
+                {isStreaming && (
+                  <div className="typing-indicator">
+                    <span></span><span></span><span></span>
                   </div>
                 )}
 
