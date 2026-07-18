@@ -353,6 +353,60 @@ function App() {
   };
 
   // Helper to explain a word by name
+  // Helper to parse incomplete JSON strings progressively during streaming
+  const parsePartialJson = (str) => {
+    const data = {
+      word: '',
+      part_of_speech: '',
+      meaning: '',
+      example_sentence_german: '',
+      example_sentence_english: '',
+      synonyms: []
+    };
+
+    // Strip markdown code fences if present in the stream
+    let cleaned = str.trim();
+    cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\n?/, '');
+    cleaned = cleaned.replace(/\n?\s*```$/, '');
+    cleaned = cleaned.trim();
+
+    // Extract simple string fields using regex matching up to next field or end of string
+    const wordMatch = cleaned.match(/"word"\s*:\s*"([^"]*)"?/);
+    if (wordMatch) data.word = wordMatch[1];
+
+    const posMatch = cleaned.match(/"part_of_speech"\s*:\s*"([^"]*)"?/);
+    if (posMatch) data.part_of_speech = posMatch[1];
+
+    const meaningMatch = cleaned.match(/"meaning"\s*:\s*"([^"]*)"?/);
+    if (meaningMatch) data.meaning = meaningMatch[1];
+
+    const exGerMatch = cleaned.match(/"example_sentence_german"\s*:\s*"([^"]*)"?/);
+    if (exGerMatch) data.example_sentence_german = exGerMatch[1];
+
+    const exEngMatch = cleaned.match(/"example_sentence_english"\s*:\s*"([^"]*)"?/) ||
+                       cleaned.match(/"example_sentence_sentence_english"\s*:\s*"([^"]*)"?/) ||
+                       cleaned.match(/"example_sentence_english_translation"\s*:\s*"([^"]*)"?/) ||
+                       cleaned.match(/"example_english"\s*:\s*"([^"]*)"?/);
+    if (exEngMatch) data.example_sentence_english = exEngMatch[1];
+
+    // Extract synonyms array: "synonyms": [ ... ]
+    const synsMatch = cleaned.match(/"synonyms"\s*:\s*\[([\s\S]*)/);
+    if (synsMatch) {
+      const synsStr = synsMatch[1];
+      const objRegex = /\{\s*"word"\s*:\s*"([^"]*)"?\s*(?:,\s*"english"\s*:\s*"([^"]*)"?)?\s*\}/g;
+      let match;
+      while ((match = objRegex.exec(synsStr)) !== null) {
+        data.synonyms.push({
+          word: match[1],
+          english: match[2] || ''
+        });
+      }
+    }
+
+    return data;
+  };
+
+  // Helper to explain a word by name
   const explainWordByName = async (wordToExplain) => {
     if (!wordToExplain.trim()) return;
 
@@ -362,7 +416,7 @@ function App() {
     setWordFeedback(null);
 
     try {
-      const response = await fetch('/api/explain_word', {
+      const response = await fetch('/api/explain_word_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word: wordToExplain })
@@ -372,14 +426,68 @@ function App() {
         throw new Error(`Server returned status ${response.status}`);
       }
 
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process SSE lines
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop(); // Keep incomplete line
+
+        for (const line of lines) {
+          const cleanedLine = line.replace(/^data:\s*/, '').trim();
+          if (!cleanedLine) continue;
+
+          try {
+            const event = JSON.parse(cleanedLine);
+            if (event.type === 'token') {
+              // Append to raw text stream and parse on the fly
+              setWordData((prev) => {
+                const newRaw = (prev?._raw || '') + event.text;
+                const parsed = parsePartialJson(newRaw);
+                return {
+                  ...parsed,
+                  _raw: newRaw,
+                  latency_s: prev?.latency_s || null
+                };
+              });
+            } else if (event.type === 'done') {
+              setWordData((prev) => ({
+                ...prev,
+                latency_s: event.latency_s
+              }));
+            } else if (event.type === 'error') {
+              throw new Error(event.error);
+            }
+          } catch (e) {
+            console.error('Error parsing SSE line:', cleanedLine, e);
+          }
+        }
       }
-      setWordData(data);
     } catch (err) {
       console.error(err);
-      setWordError(err.message || 'Failed to explain word. Please try again.');
+      // Fallback to non-streaming endpoint
+      try {
+        const fallbackRes = await fetch('/api/explain_word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ word: wordToExplain })
+        });
+        if (!fallbackRes.ok) {
+          throw new Error(`Server returned status ${fallbackRes.status}`);
+        }
+        const data = await fallbackRes.json();
+        if (data.error) throw new Error(data.error);
+        setWordData(data);
+      } catch (fallbackErr) {
+        setWordError(fallbackErr.message || 'Failed to explain word. Please try again.');
+      }
     } finally {
       setLoadingWord(false);
     }
