@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Resolve KServe BentoML URL
+// Resolve KServe inference service URL
 const backendUrl = process.env.NEXT_PUBLIC_API_URL ||
   process.env.API_URL ||
   'http://lang-learn-inference-predictor.lang-learn.svc.cluster.local';
@@ -24,7 +24,7 @@ app.use(
     target: backendUrl,
     changeOrigin: true,
     pathRewrite: {
-      '^/api': '', // Remove '/api' prefix when forwarding to BentoML
+      '^/api': '', // Remove '/api' prefix when forwarding to inference service
     },
     onProxyReq: (proxyReq, req, res) => {
       console.log(`[Proxy] Forwarding ${req.method} ${req.url}`);
