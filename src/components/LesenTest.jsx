@@ -7,6 +7,13 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
   const [showResetModal, setShowResetModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+  // Reset state when a brand new paper is loaded
+  useEffect(() => {
+    setActiveTeil(1);
+    setAnswers({});
+    setTimeLeft((paper?.duration_minutes || 30) * 60);
+  }, [paper?.paper_id]);
+
   // Timer countdown
   useEffect(() => {
     if (timeLeft <= 0) return;

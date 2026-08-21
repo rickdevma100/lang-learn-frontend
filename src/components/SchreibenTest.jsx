@@ -7,6 +7,13 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
   const [showResetModal, setShowResetModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+  // Reset state when a brand new paper is loaded
+  useEffect(() => {
+    setActiveTeil(1);
+    setAnswers({ teil1: '', teil2: '' });
+    setTimeLeft((paper?.duration_minutes || 30) * 60);
+  }, [paper?.paper_id]);
+
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => {

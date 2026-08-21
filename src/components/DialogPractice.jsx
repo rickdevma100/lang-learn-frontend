@@ -18,13 +18,105 @@ const A2_VOCAB_LOADER_LIST = [
   { german: "toll", english: "great / awesome" },
   { german: "hässlich", english: "ugly" },
   { german: "interessant", english: "interesting" },
+  { german: "uninteressant", english: "uninteresting" },
+  { german: "langweilig", english: "boring" },
   { german: "wichtig", english: "important" },
+  { german: "traurig", english: "sad" },
+  { german: "einwerfen", english: "to drop in / to mail" },
   { german: "die Überweisung", english: "bank transfer" },
-  { german: "umziehen", english: "to move (house)" },
+  { german: "umziehen", english: "to move (house) / to change clothes" },
   { german: "In die Berge", english: "Into the mountains" },
   { german: "ans Meer", english: "to the sea / seaside" },
+  { german: "aufs Land", english: "to the countryside" },
+  { german: "in die Großstadt", english: "to the big city" },
+  { german: "faul", english: "lazy" },
   { german: "fleißig", english: "industrious / hard-working" },
-  { german: "die Fahrkarte", english: "ticket (for train/bus)" }
+  { german: "launisch", english: "moody" },
+  { german: "kurz", english: "short" },
+  { german: "groß", english: "big / tall" },
+  { german: "klein", english: "small" },
+  { german: "schlank", english: "slim / slender" },
+  { german: "dick", english: "thick / fat" },
+  { german: "ruhig", english: "quiet / calm" },
+  { german: "laut", english: "loud" },
+  { german: "freundlich", english: "friendly" },
+  { german: "unfreundlich", english: "unfriendly" },
+  { german: "intelligent", english: "intelligent" },
+  { german: "unintelligent", english: "unintelligent" },
+  { german: "die Augen", english: "eyes" },
+  { german: "lang", english: "long" },
+  { german: "keine", english: "none / no" },
+  { german: "feiert", english: "celebrates / parties" },
+  { german: "nehmen", english: "to take" },
+  { german: "die Kirche", english: "church" },
+  { german: "großartig", english: "great / magnificent" },
+  { german: "günstig", english: "cheap / inexpensive / favorable" },
+  { german: "der Nachbar", english: "neighbor" },
+  { german: "schwarz", english: "black" },
+  { german: "grau", english: "gray" },
+  { german: "grün", english: "green" },
+  { german: "gelb", english: "yellow" },
+  { german: "das Auto", english: "car" },
+  { german: "das Rad", english: "bicycle / wheel" },
+  { german: "das Motorrad", english: "motorcycle" },
+  { german: "das Boot", english: "boat" },
+  { german: "der Zug", english: "train" },
+  { german: "die U-Bahn", english: "subway / underground train" },
+  { german: "das Flugzeug", english: "airplane" },
+  { german: "die Bootsfahrt", english: "boat trip" },
+  { german: "der Geldbeutel", english: "wallet / purse" },
+  { german: "schnell", english: "fast / quick" },
+  { german: "bequem", english: "comfortable / convenient" },
+  { german: "langsam", english: "slow" },
+  { german: "teuer", english: "expensive" },
+  { german: "fliegen", english: "to fly" },
+  { german: "fahren", english: "to drive / to travel / to go" },
+  { german: "reisen", english: "to travel" },
+  { german: "passieren", english: "to happen / to pass" },
+  { german: "gehören", english: "to belong to" },
+  { german: "gestohlen", english: "stolen" },
+  { german: "zusammen", english: "together" },
+  { german: "getrennt", english: "separated / separately" },
+  { german: "zeigen", english: "to show" },
+  { german: "die Fahrkarte", english: "ticket (for train/bus)" },
+  { german: "die Kneipe", english: "pub / tavern" },
+  { german: "der Abschied", english: "farewell / parting" },
+  { german: "das Klima", english: "climate" },
+  { german: "trocken", english: "dry" },
+  { german: "heiß", english: "hot" },
+  { german: "der Frühling", english: "spring" },
+  { german: "nass", english: "wet" },
+  { german: "warm", english: "warm" },
+  { german: "der Sommer", english: "summer" },
+  { german: "der Winter", english: "winter" },
+  { german: "der Herbst", english: "autumn / fall" },
+  { german: "regnet", english: "rains / it rains" },
+  { german: "regnerisch", english: "rainy" },
+  { german: "schneit", english: "snows / it snows" },
+  { german: "das Gewitter", english: "thunderstorm" },
+  { german: "hagelt", english: "hails / it hails" },
+  { german: "wechselhaft", english: "changeable / unstable" },
+  { german: "donnert", english: "thunders / it thunders" },
+  { german: "blitzt", english: "flashes (lightning)" },
+  { german: "geschlossen", english: "closed" },
+  { german: "sauber", english: "clean" },
+  { german: "putzt", english: "cleans / is cleaning" },
+  { german: "die Nähe", english: "proximity / vicinity (near)" },
+  { german: "weit", english: "far / wide" },
+  { german: "gegenüber", english: "opposite / across from" },
+  { german: "neben", english: "next to" },
+  { german: "hinter", english: "behind" },
+  { german: "geradeaus", english: "straight ahead" },
+  { german: "weil", english: "because" },
+  { german: "obwohl", english: "although / even though" },
+  { german: "denn", english: "because / for" },
+  { german: "da", english: "since / because / there" },
+  { german: "deshalb", english: "therefore / that's why" },
+  { german: "der Norden", english: "north / the north" },
+  { german: "der Süden", english: "south / the south" },
+  { german: "der Westen", english: "west / the west" },
+  { german: "der Osten", english: "east / the east" },
+  { german: "der Freund / die Freundin", english: "friend (male / female)" }
 ];
 
 export default function DialogPractice({ onBackToHome }) {
@@ -179,7 +271,7 @@ export default function DialogPractice({ onBackToHome }) {
           } else if (event.type === 'done') {
             setStreamingMeta(event);
             setDialogueData({
-              title: 'Conversation',
+              title: 'Conversation Display',
               level: event.level,
               cefr_score: event.cefr_score,
               latency_s: event.latency_s,
@@ -648,9 +740,9 @@ export default function DialogPractice({ onBackToHome }) {
   };
 
   return (
-    <div className="dialog-practice-container">
+    <div className="practice-view-container">
       {/* Top Bar with Navigation Tabs */}
-      <div className="practice-sub-header glass-panel">
+      <div className="practice-sub-header glass-panel" style={{ marginBottom: '2rem' }}>
         <button className="back-home-btn" onClick={onBackToHome}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -674,401 +766,432 @@ export default function DialogPractice({ onBackToHome }) {
         </nav>
       </div>
 
-      <div className="dashboard-grid">
-        {activeTab === 'dialogue' ? (
-          <>
-            {/* Sidebar configuration */}
-            <section className="glass-panel" style={{ padding: '1.5rem' }}>
-              <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Configure Scenario</h2>
-              <form onSubmit={handleGenerateDialogue}>
-                <div className="form-group">
-                  <label className="form-label">🎯 Scenario / Topic</label>
-                  <textarea
-                    className="form-control"
-                    value={scenario}
-                    onChange={(e) => setScenario(e.target.value)}
-                    placeholder="e.g. Asking for a menu, bargaining on a coffee mug..."
-                    disabled={loadingDialogue}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">📊 Difficulty (CEFR Level)</label>
-                  <select
-                    className="form-control"
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value)}
-                    disabled={loadingDialogue}
-                  >
-                    <option value="A1">A1 (Beginner)</option>
-                    <option value="A2">A2 (Elementary)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    <span>🌡️ Creativity (Temperature)</span>
-                    <span style={{ color: 'var(--primary)' }}>{temperature}</span>
-                  </label>
-                  <input
-                    type="range"
-                    className="form-control"
-                    min="0.1"
-                    max="1.0"
-                    step="0.1"
-                    value={temperature}
-                    onChange={(e) => setTemperature(e.target.value)}
-                    disabled={loadingDialogue}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  style={{ width: '100%', marginTop: '1rem' }}
-                  disabled={loadingDialogue || isStreaming}
-                >
-                  {loadingDialogue ? 'Generating Dialogue...' : isStreaming ? 'Receiving Dialogue...' : 'Generate Dialogue'}
-                </button>
-              </form>
-
-              <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-muted)',
-                    fontSize: '0.85rem'
-                  }}
-                  onClick={handleClearCache}
-                  disabled={clearingCache}
-                >
-                  {clearingCache ? 'Clearing Cache...' : '🗑️ Clear Semantic Cache'}
-                </button>
+      {activeTab === 'dialogue' ? (
+        <div className="dashboard-grid">
+          {/* Sidebar configuration */}
+          <section className="glass-panel" style={{ padding: '1.5rem' }}>
+            <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Configure Scenario</h2>
+            <form onSubmit={handleGenerateDialogue}>
+              <div className="form-group">
+                <label className="form-label">🎯 Scenario / Topic</label>
+                <textarea
+                  className="form-control"
+                  value={scenario}
+                  onChange={(e) => setScenario(e.target.value)}
+                  placeholder="e.g. Asking for a menu, bargaining on a coffee mug..."
+                  disabled={loadingDialogue}
+                  required
+                />
               </div>
-            </section>
 
-            {/* Dialogue View Area */}
-            <section className="chat-container glass-panel">
-              <div className="chat-header">
-                <h2>{dialogueData?.title || 'Interactive Conversation'}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {dialogueData && dialogueData.dialogue && dialogueData.dialogue.length > 0 && !isStreaming && (
-                    <button
-                      className={`practice-toggle-btn ${practiceMode ? 'active' : ''}`}
-                      onClick={togglePracticeMode}
-                    >
-                      {practiceMode ? '📖 View Mode' : '✏️ Practice Mode'}
-                    </button>
-                  )}
-                  {dialogueData && dialogueData.cached && (
-                    <span className="badge badge-cache" title={`Similarity: ${(dialogueData.cache_similarity * 100).toFixed(1)}%`}>
+              <div className="form-group">
+                <label className="form-label">📊 Difficulty (CEFR Level)</label>
+                <select
+                  className="form-control"
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  disabled={loadingDialogue}
+                >
+                  <option value="A1">A1 (Beginner)</option>
+                  <option value="A2">A2 (Elementary)</option>
+                  <option value="B1">B1 (Intermediate)</option>
+                  <option value="B2">B2 (Upper Intermediate)</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">🎛️ Creativity (Temperature: {temperature})</label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.1"
+                  className="form-control"
+                  style={{ padding: '0' }}
+                  value={temperature}
+                  onChange={(e) => setTemperature(e.target.value)}
+                  disabled={loadingDialogue}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn"
+                style={{ width: '100%', marginTop: '1rem' }}
+                disabled={loadingDialogue || isStreaming}
+              >
+                {loadingDialogue ? '⏳ Generating...' : isStreaming ? '✨ Streaming Dialogue...' : '✨ Generate Dialogue'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  width: '100%',
+                  marginTop: '0.75rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)'
+                }}
+                onClick={handleClearCache}
+                disabled={clearingCache}
+              >
+                {clearingCache ? '🧹 Clearing Cache...' : '🧹 Clear Semantic Cache'}
+              </button>
+            </form>
+          </section>
+
+          {/* Chat Display Panel */}
+          <section className="glass-panel chat-container">
+            <div className="chat-header">
+              <h3>Conversation Display</h3>
+              {dialogueData && (
+                <div className="chat-meta">
+                  {dialogueData.cached && (
+                    <span className="meta-badge" title={`Similarity: ${(dialogueData.cache_similarity * 100).toFixed(1)}%`}>
                       ⚡ Cached ({(dialogueData.cache_similarity * 100).toFixed(0)}%)
                     </span>
                   )}
-                  {dialogueData && dialogueData.latency_s && (
-                    <span className="badge badge-latency">
-                      ⏱️ {dialogueData.latency_s}s
-                    </span>
+                  {dialogueData.latency_s && (
+                    <span className="meta-badge">⏱️ Latency: {dialogueData.latency_s}s</span>
+                  )}
+                  <span className="meta-badge highlight">🎯 CEFR: {dialogueData.level || level} {dialogueData.cefr_score ? `(Score: ${dialogueData.cefr_score})` : ''}</span>
+                  {!isStreaming && dialogueData.dialogue && dialogueData.dialogue.length > 0 && (
+                    <button
+                      className={`practice-mode-btn ${practiceMode ? 'active' : ''}`}
+                      onClick={togglePracticeMode}
+                      title={practiceMode ? 'Exit Practice Mode' : 'Enter Practice Mode'}
+                    >
+                      {practiceMode ? '✏️ Exit Practice' : '🎯 Practice Mode'}
+                    </button>
                   )}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="chat-messages">
-                {loadingDialogue && (
-                  <div className="loading-container">
-                    <div className="spinner"></div>
-                    <p style={{ color: 'var(--text-secondary)' }}>Crafting natural German dialogue...</p>
-                    {currentVocab && (
-                      <div className="vocab-rotator">
-                        <div className="vocab-badge">Vocabulary Tip</div>
-                        <div className="vocab-german">{currentVocab.german}</div>
-                        <div className="vocab-english">{currentVocab.english}</div>
+            <div className="chat-messages">
+              {(loadingDialogue || (isStreaming && streamingTurns.length === 0)) && (
+                <div className="spinner-container">
+                  <div className="spinner"></div>
+                  <p style={{ color: 'var(--text-secondary)' }}>Crafting your scenario in German...</p>
+                  {currentVocab && (
+                    <div className="vocab-loader-card" key={currentVocab.german}>
+                      <div className="vocab-loader-title">
+                        <span>💡</span> A2 German Vocabulary Tip
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="vocab-loader-german">
+                        {currentVocab.german}
+                      </div>
+                      <div className="vocab-loader-english">
+                        {currentVocab.english}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {dialogueError && (
-                  <div style={{ padding: '1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--danger)', borderRadius: '8px', border: '1px solid var(--danger)' }}>
-                    {dialogueError}
-                  </div>
-                )}
+              {dialogueError && (
+                <div style={{ color: 'var(--danger)', padding: '1rem', textAlign: 'center' }}>
+                  <p>⚠️ {dialogueError}</p>
+                </div>
+              )}
 
-                {!loadingDialogue && !isStreaming && !dialogueData && !dialogueError && (
-                  <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
-                    <p>Enter a scenario on the left and click "Generate Dialogue".</p>
-                  </div>
-                )}
+              {!loadingDialogue && !isStreaming && !dialogueData && !dialogueError && (
+                <div className="chat-empty">
+                  <div className="chat-empty-icon">💬</div>
+                  <p>Configure a scenario on the left and click "Generate Dialogue" to start practicing natural German conversations.</p>
+                </div>
+              )}
 
-                {/* Display streaming turns */}
-                {isStreaming && (
-                  <>
-                    {streamingTurns.map((turn, index) => (
-                      <div key={index} className={`chat-bubble-wrapper ${turn.speaker.includes('A') ? 'left' : 'right'}`}>
+              {/* Display streaming turns */}
+              {isStreaming && streamingTurns.length > 0 && (
+                <>
+                  {streamingTurns.map((turn, index) => {
+                    const isPersonA = turn.speaker.toLowerCase().includes('a');
+                    return (
+                      <div key={`stream-${index}`} className={`chat-bubble-wrapper ${isPersonA ? 'left' : 'right'} streaming-new`}>
                         <div className="speaker-label">{turn.speaker}</div>
                         <div className="chat-bubble">
-                          <p className="german-text">{renderClickableText(turn.german)}</p>
-                          {turn.english && <p className="english-text">{turn.english}</p>}
+                          <div className="german-text">{renderClickableText(turn.german)}</div>
+                          {turn.english && <div className="english-translation">{turn.english}</div>}
                         </div>
                       </div>
-                    ))}
-                    <div className="streaming-cursor-container">
-                      <span className="streaming-dot"></span>
-                      <span className="streaming-dot"></span>
-                      <span className="streaming-dot"></span>
-                    </div>
-                  </>
-                )}
+                    );
+                  })}
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </>
+              )}
 
-                {/* Display final completed dialogue */}
-                {!isStreaming && dialogueData && dialogueData.dialogue && dialogueData.dialogue.map((turn, index) => {
-                  const isHidden = practiceMode && practiceHiddenIndices.includes(index);
-                  const result = practiceResults[index];
-                  const isChecking = practiceChecking === index;
-                  const isRecording = sttRecording === index;
-                  const isTranscribing = sttLoading === index;
+              {/* Display final completed dialogue */}
+              {!isStreaming && dialogueData && dialogueData.dialogue && dialogueData.dialogue.map((turn, index) => {
+                const isHidden = practiceMode && practiceHiddenIndices.includes(index);
+                const isTtsPlaying = ttsPlayingIndex === index;
+                const isTtsLoading = ttsLoadingIndex === index;
+                const userResult = practiceResults[index];
+                const isChecking = practiceChecking === index;
+                const isRecording = sttRecording === index;
+                const isTranscribing = sttLoading === index;
 
-                  return (
-                    <div
-                      key={index}
-                      className={`chat-bubble-wrapper ${turn.speaker.includes('A') ? 'left' : 'right'}`}
-                    >
-                      <div className="speaker-label">{turn.speaker}</div>
-                      <div className={`chat-bubble ${isHidden ? 'practice-bubble' : ''}`}>
-                        {isHidden ? (
-                          <div className="practice-turn">
-                            <div className="practice-prompt">
-                              <span className="practice-hint-label">Translate into German:</span>
-                              <p className="practice-english">{turn.english}</p>
-                            </div>
-                            <div className="practice-input-group">
-                              <input
-                                type="text"
-                                className="practice-input"
-                                placeholder="Type in German or click 🎙️ to speak..."
-                                value={practiceInputs[index] || ''}
-                                onChange={(e) => handlePracticeInputChange(index, e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handlePracticeCheck(index);
-                                }}
-                                disabled={isChecking || isTranscribing}
-                              />
-                              <button
-                                className={`mic-btn ${isRecording ? 'recording' : ''} ${isTranscribing ? 'transcribing' : ''}`}
-                                onClick={() => handleMicClick(index)}
-                                disabled={isChecking}
-                                title={isRecording ? 'Stop recording' : 'Speak your answer (German)'}
-                              >
-                                {isTranscribing ? '⏳' : isRecording ? '⏹' : '🎙️'}
-                              </button>
-                              <button
-                                className="practice-check-btn"
-                                onClick={() => handlePracticeCheck(index)}
-                                disabled={isChecking || !(practiceInputs[index] || '').trim()}
-                              >
-                                {isChecking ? 'Checking...' : 'Check'}
-                              </button>
-                            </div>
+                return (
+                  <div
+                    key={index}
+                    className={`chat-bubble-wrapper ${turn.speaker.includes('A') ? 'left' : 'right'}`}
+                  >
+                    <div className="speaker-label">{turn.speaker}</div>
+                    <div className="chat-bubble">
+                      {isHidden ? (
+                        <div className="practice-input-wrapper">
+                          <p className="practice-hint">
+                            💬 Say or type in German: "{turn.english}"
+                          </p>
+                          <div className="practice-input-row">
+                            <textarea
+                              className="practice-input"
+                              rows={2}
+                              placeholder="Type what this speaker should say..."
+                              value={practiceInputs[index] || ''}
+                              onChange={(e) => handlePracticeInputChange(index, e.target.value)}
+                              disabled={isChecking || isTranscribing}
+                            />
+                            <button
+                              type="button"
+                              className={`stt-mic-btn ${isRecording ? 'recording' : ''} ${isTranscribing ? 'transcribing' : ''}`}
+                              onClick={() => handleMicClick(index)}
+                              disabled={isChecking}
+                              title={isRecording ? 'Stop Recording' : isTranscribing ? 'Transcribing...' : 'Speak your answer (German)'}
+                              aria-label="Voice input"
+                            >
+                              {isTranscribing ? '⏳' : isRecording ? '⏹' : '🎙️'}
+                            </button>
+                          </div>
 
-                            {result && (
-                              <div className={`practice-feedback practice-feedback-${result.type}`}>
-                                <p className="feedback-text">{result.feedback}</p>
-                                {result.corrected_text && result.corrected_text !== practiceInputs[index] && (
-                                  <p className="feedback-corrected">
-                                    <span className="feedback-label">Better:</span> {result.corrected_text}
-                                  </p>
-                                )}
-                              </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                              type="button"
+                              className={`practice-check-btn ${isChecking ? 'practice-checking' : ''}`}
+                              onClick={() => handlePracticeCheck(index)}
+                              disabled={isChecking || !(practiceInputs[index] || '').trim()}
+                            >
+                              {isChecking ? '🔍 Checking...' : '✓ Check'}
+                            </button>
+                            {userResult && userResult.score !== undefined && (
+                              <span className={`practice-score-badge ${userResult.score >= 0.8 ? 'high' : userResult.score >= 0.5 ? 'medium' : 'low'}`}>
+                                Score: {Math.round(userResult.score * 100)}%
+                              </span>
                             )}
                           </div>
-                        ) : (
-                          <>
-                            <div className="dialogue-line-header">
-                              <p className="german-text">{renderClickableText(turn.german)}</p>
-                              <button
-                                className={`tts-btn ${ttsPlayingIndex === index ? 'tts-playing' : ''} ${ttsLoadingIndex === index ? 'tts-loading' : ''}`}
-                                onClick={() => playTtsLine(turn, index)}
-                                disabled={ttsLoadingIndex === index}
-                                title={ttsPlayingIndex === index ? 'Stop audio' : 'Listen to pronunciation'}
-                              >
-                                {ttsLoadingIndex === index ? '⏳' : ttsPlayingIndex === index ? '⏹' : '🔊'}
-                              </button>
+
+                          {userResult && (
+                            <div className={`practice-feedback ${userResult.type}`}>
+                              <span className="pf-icon">
+                                {userResult.type === 'correct' ? '✅' : userResult.type === 'warning' ? '⚠️' : '❌'}
+                              </span>
+                              <div>
+                                <div>{userResult.feedback}</div>
+                                {userResult.corrected_text && (
+                                  <div style={{ marginTop: '4px', fontSize: '0.82rem', opacity: 0.9 }}>
+                                    <strong>Suggestion:</strong> {userResult.corrected_text}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            {turn.english && (
-                              <p className="english-text">{turn.english}</p>
-                            )}
-                          </>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <p className="german-text">{renderClickableText(turn.german)}</p>
+                          {turn.english && (
+                            <p className="english-translation">{turn.english}</p>
+                          )}
+                          <button
+                            type="button"
+                            className={`tts-btn ${isTtsPlaying ? 'tts-playing' : ''} ${isTtsLoading ? 'tts-loading' : ''}`}
+                            onClick={() => playTtsLine(turn, index)}
+                            disabled={isTtsLoading}
+                            title={isTtsPlaying ? 'Stop audio' : 'Listen to pronunciation'}
+                            aria-label={`${isTtsPlaying ? 'Stop' : 'Listen to'} ${turn.speaker}`}
+                          >
+                            {isTtsLoading ? '⏳' : isTtsPlaying ? '⏹' : '🔊'}
+                          </button>
+                        </>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
 
-                <div ref={messagesEndRef} />
+            {dialogueData && (
+              <div className="feedback-container">
+                <span className="feedback-question">Is this dialogue helpful?</span>
+                <div className="feedback-actions">
+                  <button
+                    className={`feedback-btn ${dialogueFeedback === 'up' ? 'active-up' : ''}`}
+                    onClick={() => handleFeedback('scenario_dialogue', 'up')}
+                    title="Thumbs Up"
+                  >
+                    👍
+                  </button>
+                  <button
+                    className={`feedback-btn ${dialogueFeedback === 'down' ? 'active-down' : ''}`}
+                    onClick={() => handleFeedback('scenario_dialogue', 'down')}
+                    title="Thumbs Down"
+                  >
+                    👎
+                  </button>
+                </div>
               </div>
+            )}
+          </section>
+        </div>
+      ) : (
+        /* Word Explainer Mode: Centered, Beautiful Layout */
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          {/* Word Explainer input */}
+          <section className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+            <form onSubmit={handleExplainWord} className="word-search-container">
+              <input
+                type="text"
+                className="form-control"
+                value={word}
+                onChange={(e) => setWord(e.target.value)}
+                placeholder="Type a German word (e.g. Ausbildung, Gemütlichkeit)..."
+                disabled={loadingWord}
+                required
+              />
+              <button type="submit" className="btn" disabled={loadingWord}>
+                {loadingWord ? 'Explaining...' : 'Explain Word'}
+              </button>
+            </form>
+          </section>
 
-              {dialogueData && !isStreaming && (
-                <div className="chat-footer">
-                  <div className="feedback-container">
-                    <span className="feedback-label">Was this helpful?</span>
+          {/* Word details view */}
+          <section className="glass-panel">
+            {loadingWord && (
+              <div className="spinner-container">
+                <div className="spinner"></div>
+                <p style={{ color: 'var(--text-secondary)' }}>Analyzing word, example sentences, and synonyms...</p>
+                {currentVocab && (
+                  <div className="vocab-loader-card" key={currentVocab.german}>
+                    <div className="vocab-loader-title">
+                      <span>💡</span> A2 German Vocabulary Tip
+                    </div>
+                    <div className="vocab-loader-german">
+                      {currentVocab.german}
+                    </div>
+                    <div className="vocab-loader-english">
+                      {currentVocab.english}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {wordError && (
+              <div style={{ color: 'var(--danger)', padding: '2rem', textAlign: 'center' }}>
+                <p>⚠️ {wordError}</p>
+              </div>
+            )}
+
+            {!loadingWord && !wordData && !wordError && (
+              <div className="chat-empty" style={{ padding: '4rem 2rem' }}>
+                <div className="chat-empty-icon">📖</div>
+                <p>Type any German word above to get beginner-friendly definitions, translations, and synonyms.</p>
+              </div>
+            )}
+
+            {wordData && (
+              <div className="word-card">
+                <div className="word-header">
+                  <div className="word-title-group">
+                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {wordData.word || word}
+                      <WordTtsBtn text={wordData.word || word} />
+                    </h2>
+                    <span className="part-of-speech">{wordData.part_of_speech || 'N/A'}</span>
+                  </div>
+                  {wordData.latency_s && (
+                    <span className="meta-badge">Latency: {wordData.latency_s}s</span>
+                  )}
+                </div>
+
+                <div className="word-section">
+                  <h4 className="word-section-title">Meaning</h4>
+                  <p className="meaning-text">{wordData.meaning || 'No description available.'}</p>
+                </div>
+
+                {(wordData.example_sentence_german || wordData.example_sentence_english) && (
+                  <div className="word-section">
+                    <h4 className="word-section-title">Example Usage</h4>
+                    <div className="example-box">
+                      {wordData.example_sentence_german && (
+                        <p className="example-german" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {wordData.example_sentence_german}
+                          <WordTtsBtn text={wordData.example_sentence_german} />
+                        </p>
+                      )}
+                      {wordData.example_sentence_english && (
+                        <p className="example-english">{wordData.example_sentence_english}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {wordData.synonyms && wordData.synonyms.length > 0 && (
+                  <div className="word-section" style={{ marginBottom: '2rem' }}>
+                    <h4 className="word-section-title">Synonyms</h4>
+                    <div className="synonyms-list">
+                      {wordData.synonyms.map((syn, idx) => (
+                        <span
+                          key={idx}
+                          className="synonym-tag"
+                          onClick={() => {
+                            setWord(syn.word);
+                            explainWordByName(syn.word);
+                          }}
+                          style={{ cursor: 'pointer' }}
+                          title={`Click to explain "${syn.word}"`}
+                        >
+                          <strong>{syn.word}</strong>
+                          {syn.english && (
+                            <span className="synonym-translation">({syn.english})</span>
+                          )}
+                          <WordTtsBtn text={syn.word} />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="feedback-container" style={{ margin: '2rem -2rem -2rem -2rem', borderRadius: '0 0 16px 16px' }}>
+                  <span className="feedback-question">Is this explanation accurate and helpful?</span>
+                  <div className="feedback-actions">
                     <button
-                      className={`feedback-btn ${dialogueFeedback === 'up' ? 'active-up' : ''}`}
-                      onClick={() => handleFeedback('scenario_dialogue', 'up')}
-                      title="Helpful"
+                      className={`feedback-btn ${wordFeedback === 'up' ? 'active-up' : ''}`}
+                      onClick={() => handleFeedback('explain_word', 'up')}
+                      title="Thumbs Up"
                     >
                       👍
                     </button>
                     <button
-                      className={`feedback-btn ${dialogueFeedback === 'down' ? 'active-down' : ''}`}
-                      onClick={() => handleFeedback('scenario_dialogue', 'down')}
-                      title="Not helpful"
+                      className={`feedback-btn ${wordFeedback === 'down' ? 'active-down' : ''}`}
+                      onClick={() => handleFeedback('explain_word', 'down')}
+                      title="Thumbs Down"
                     >
                       👎
                     </button>
                   </div>
                 </div>
-              )}
-            </section>
-          </>
-        ) : (
-          /* Word Explainer Tab */
-          <>
-            <section className="glass-panel" style={{ padding: '1.5rem' }}>
-              <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>German Word Explainer</h2>
-              <form onSubmit={handleExplainWord}>
-                <div className="form-group">
-                  <label className="form-label">🔍 German Word</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={word}
-                    onChange={(e) => setWord(e.target.value)}
-                    placeholder="e.g. Ausbildung, Gemütlichkeit..."
-                    disabled={loadingWord}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  style={{ width: '100%', marginTop: '1rem' }}
-                  disabled={loadingWord}
-                >
-                  {loadingWord ? 'Explaining Word...' : 'Explain Word'}
-                </button>
-              </form>
-            </section>
-
-            <section className="chat-container glass-panel" style={{ padding: '2rem' }}>
-              {loadingWord && (
-                <div className="loading-container">
-                  <div className="spinner"></div>
-                  <p style={{ color: 'var(--text-secondary)' }}>Analyzing word, example sentences, and synonyms...</p>
-                </div>
-              )}
-
-              {wordError && (
-                <div style={{ padding: '1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--danger)', borderRadius: '8px', border: '1px solid var(--danger)' }}>
-                  {wordError}
-                </div>
-              )}
-
-              {!loadingWord && !wordData && !wordError && (
-                <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
-                  <p>Enter a German word on the left or click any word in a dialogue to see its full breakdown.</p>
-                </div>
-              )}
-
-              {wordData && (
-                <div className="word-detail-card">
-                  <div className="word-detail-header">
-                    <div>
-                      <h2 className="word-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {wordData.word || word}
-                        {wordData.word && <WordTtsBtn text={wordData.word} />}
-                      </h2>
-                      {wordData.part_of_speech && (
-                        <span className="part-of-speech-badge">{wordData.part_of_speech}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {wordData.meaning && (
-                    <div className="word-section">
-                      <h4 className="section-heading">Meaning / Definition</h4>
-                      <p className="meaning-text">{wordData.meaning}</p>
-                    </div>
-                  )}
-
-                  {(wordData.example_sentence_german || wordData.example_sentence_english) && (
-                    <div className="word-section">
-                      <h4 className="section-heading">Example Sentence</h4>
-                      <div className="example-box">
-                        {wordData.example_sentence_german && (
-                          <p className="example-german" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {wordData.example_sentence_german}
-                            <WordTtsBtn text={wordData.example_sentence_german} />
-                          </p>
-                        )}
-                        {wordData.example_sentence_english && (
-                          <p className="example-english">{wordData.example_sentence_english}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {wordData.synonyms && wordData.synonyms.length > 0 && (
-                    <div className="word-section">
-                      <h4 className="section-heading">Synonyms</h4>
-                      <div className="synonyms-grid">
-                        {wordData.synonyms.map((syn, index) => (
-                          <div
-                            key={index}
-                            className="synonym-chip"
-                            onClick={() => {
-                              setWord(syn.word);
-                              explainWordByName(syn.word);
-                            }}
-                            title={`Click to explain "${syn.word}"`}
-                          >
-                            <span className="synonym-word">{syn.word}</span>
-                            {syn.english && <span className="synonym-english">({syn.english})</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="chat-footer" style={{ borderTop: '1px solid var(--border)', marginTop: '2rem', paddingTop: '1rem' }}>
-                    <div className="feedback-container">
-                      <span className="feedback-label">Was this explanation helpful?</span>
-                      <button
-                        className={`feedback-btn ${wordFeedback === 'up' ? 'active-up' : ''}`}
-                        onClick={() => handleFeedback('explain_word', 'up')}
-                        title="Helpful"
-                      >
-                        👍
-                      </button>
-                      <button
-                        className={`feedback-btn ${wordFeedback === 'down' ? 'active-down' : ''}`}
-                        onClick={() => handleFeedback('explain_word', 'down')}
-                        title="Not helpful"
-                      >
-                        👎
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-          </>
-        )}
-      </div>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }
