@@ -80,6 +80,8 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
     onResetPaper('lesen');
   };
 
+  const isTeilReady = (teilObj) => Boolean(teilObj && (teilObj.items?.length || teilObj.directory?.length || teilObj.ads?.length));
+
   return (
     <div className="exam-runner-container">
       {/* Top Navigation / Toolbar */}
@@ -95,6 +97,12 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
             <h2 className="exam-main-title">Goethe-Zertifikat A2: Lesen</h2>
             <span className="exam-sub-meta">30 Min • 4 Teile • 20 Items • Max 25 Punkte</span>
           </div>
+          {paper?.is_streaming && (
+            <div className="streaming-badge" title="Weitere Teile werden im Hintergrund generiert">
+              <span className="pulse-dot"></span>
+              <span>KI generiert live...</span>
+            </div>
+          )}
         </div>
 
         <div className="exam-header-center">
@@ -118,10 +126,9 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
-            <span>New Paper / Reset</span>
+            <span>New Paper</span>
           </button>
 
           {/* Submit Button */}
@@ -156,7 +163,9 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
         >
           <span className="teil-tab-title">Teil 1 (1–5)</span>
           <span className="teil-tab-sub">Zeitungsartikel</span>
-          <span className="teil-progress-badge">{countTeilAnswered(1, 5)}/5</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil1) ? `${countTeilAnswered(1, 5)}/5` : '⏳'}
+          </span>
         </button>
 
         <button
@@ -165,7 +174,9 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
         >
           <span className="teil-tab-title">Teil 2 (6–10)</span>
           <span className="teil-tab-sub">Kaufhaus-Wegweiser</span>
-          <span className="teil-progress-badge">{countTeilAnswered(6, 10)}/5</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil2) ? `${countTeilAnswered(6, 10)}/5` : '⏳'}
+          </span>
         </button>
 
         <button
@@ -174,7 +185,9 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
         >
           <span className="teil-tab-title">Teil 3 (11–15)</span>
           <span className="teil-tab-sub">E-Mail / Brief</span>
-          <span className="teil-progress-badge">{countTeilAnswered(11, 15)}/5</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil3) ? `${countTeilAnswered(11, 15)}/5` : '⏳'}
+          </span>
         </button>
 
         <button
@@ -183,7 +196,9 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
         >
           <span className="teil-tab-title">Teil 4 (16–20)</span>
           <span className="teil-tab-sub">Anzeigen & Personen</span>
-          <span className="teil-progress-badge">{countTeilAnswered(16, 20)}/5</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil4) ? `${countTeilAnswered(16, 20)}/5` : '⏳'}
+          </span>
         </button>
       </div>
 
@@ -191,6 +206,13 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
       <div className="teil-content-area">
         {/* ======================= TEIL 1 ======================= */}
         {activeTeil === 1 && (
+          !isTeilReady(teil1) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Teil 1 wird gerade von der KI generiert...</h3>
+              <p>Bitte haben Sie einen kurzen Moment Geduld.</p>
+            </div>
+          ) : (
           <div className="split-view-container">
             {/* Left: Article */}
             <div className="split-pane article-pane glass-panel">
@@ -245,10 +267,17 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
               </div>
             </div>
           </div>
-        )}
+        ))}
 
         {/* ======================= TEIL 2 ======================= */}
         {activeTeil === 2 && (
+          !isTeilReady(teil2) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Teil 2 wird gerade im Hintergrund von der KI generiert...</h3>
+              <p>Sie können bereits Teil 1 bearbeiten, während Teil 2 vorbereitet wird.</p>
+            </div>
+          ) : (
           <div className="split-view-container">
             {/* Left: Kaufhaus Directory Board */}
             <div className="split-pane info-board-pane glass-panel">
@@ -304,10 +333,17 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
               </div>
             </div>
           </div>
-        )}
+        ))}
 
         {/* ======================= TEIL 3 ======================= */}
         {activeTeil === 3 && (
+          !isTeilReady(teil3) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Teil 3 wird gerade im Hintergrund von der KI generiert...</h3>
+              <p>Sie können bereits die vorherigen Teile bearbeiten.</p>
+            </div>
+          ) : (
           <div className="split-view-container">
             {/* Left: Email */}
             <div className="split-pane email-pane glass-panel">
@@ -370,10 +406,17 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
               </div>
             </div>
           </div>
-        )}
+        ))}
 
         {/* ======================= TEIL 4 ======================= */}
         {activeTeil === 4 && (
+          !isTeilReady(teil4) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Teil 4 wird gerade im Hintergrund von der KI generiert...</h3>
+              <p>Sie können bereits die vorherigen Teile bearbeiten.</p>
+            </div>
+          ) : (
           <div className="teil4-container">
             {/* Top / Left: 6 Classified Ads */}
             <div className="ads-section glass-panel">
@@ -436,7 +479,7 @@ export default function LesenTest({ paper, onResetPaper, onSubmitExam, onBackToH
               </div>
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Bottom Progress Navigation */}

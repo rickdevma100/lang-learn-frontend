@@ -74,7 +74,7 @@ export default function App() {
     };
   }, [loadingExam]);
 
-  // Start exam - fetches paper for that module specifically
+  // Start exam - fetches paper for that module specifically with progressive streaming
   const handleStartExam = async (module) => {
     setActiveModule(module);
     setCurrentView(module);
@@ -83,17 +83,97 @@ export default function App() {
     setPaper(null);
 
     try {
-      const res = await fetch('/api/exam_generate', {
+      // 1. Try progressive SSE streaming endpoint
+      const res = await fetch('/api/exam_generate_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ module, level: 'A2' })
       });
 
-      if (!res.ok) {
-        throw new Error(`Server returned error status ${res.status}`);
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let streamActive = true;
+        let receivedAnyTeil = false;
+
+        while (streamActive) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data:')) continue;
+            const jsonStr = trimmed.replace(/^data:\s*/, '');
+            try {
+              const event = JSON.parse(jsonStr);
+
+              if (event.type === 'init') {
+                setPaper({
+                  paper_id: event.paper_id,
+                  module: event.module,
+                  level: event.level,
+                  created_at: event.created_at,
+                  duration_minutes: event.duration_minutes || 30,
+                  total_points: event.total_points || 25.0,
+                  total_teils: event.total_teils,
+                  teils: {},
+                  is_streaming: true
+                });
+              } else if (event.type === 'teil') {
+                receivedAnyTeil = true;
+                setPaper(prev => ({
+                  ...(prev || {}),
+                  paper_id: prev?.paper_id || event.paper_id,
+                  module: prev?.module || module,
+                  level: prev?.level || 'A2',
+                  duration_minutes: prev?.duration_minutes || 30,
+                  total_points: prev?.total_points || 25.0,
+                  teils: {
+                    ...(prev?.teils || {}),
+                    [event.teil_name]: event.data
+                  },
+                  is_streaming: true
+                }));
+                // Reveal the exam UI immediately once the first Teil is generated!
+                setLoadingExam(false);
+              } else if (event.type === 'done') {
+                setPaper({
+                  ...event.paper,
+                  is_streaming: false
+                });
+                setLoadingExam(false);
+                streamActive = false;
+              } else if (event.type === 'error') {
+                throw new Error(event.error || 'Streaming error occurred');
+              }
+            } catch (pErr) {
+              console.warn('Error parsing SSE event:', pErr, jsonStr);
+            }
+          }
+        }
+
+        if (receivedAnyTeil) {
+          return;
+        }
       }
 
-      const paperData = await res.json();
+      // 2. Fallback to standard synchronous endpoint if stream unavailable
+      const fallbackRes = await fetch('/api/exam_generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module, level: 'A2' })
+      });
+
+      if (!fallbackRes.ok) {
+        throw new Error(`Server returned error status ${fallbackRes.status}`);
+      }
+
+      const paperData = await fallbackRes.json();
       if (paperData.error) {
         throw new Error(paperData.error);
       }

@@ -75,6 +75,8 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
     onResetPaper('schreiben');
   };
 
+  const isTeilReady = (teilObj) => Boolean(teilObj && (teilObj.scenario_german || teilObj.bullet_points?.length));
+
   return (
     <div className="exam-runner-container">
       {/* Header Toolbar */}
@@ -90,6 +92,12 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
             <h2 className="exam-main-title">Goethe-Zertifikat A2: Schreiben</h2>
             <span className="exam-sub-meta">30 Min • 2 Teile (SMS & E-Mail) • Max 25 Punkte</span>
           </div>
+          {paper?.is_streaming && (
+            <div className="streaming-badge" title="Weitere Teile werden im Hintergrund generiert">
+              <span className="pulse-dot"></span>
+              <span>KI generiert live...</span>
+            </div>
+          )}
         </div>
 
         <div className="exam-header-center">
@@ -111,10 +119,9 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
-            <span>New Paper / Reset</span>
+            <span>New Paper</span>
           </button>
 
           <button
@@ -148,7 +155,9 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
         >
           <span className="teil-tab-title">Teil 1: Kurze Nachricht</span>
           <span className="teil-tab-sub">SMS an einen Freund</span>
-          <span className="teil-progress-badge">{t1Words} Wörter</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil1) ? `${t1Words} Wörter` : '⏳'}
+          </span>
         </button>
 
         <button
@@ -157,7 +166,9 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
         >
           <span className="teil-tab-title">Teil 2: E-Mail</span>
           <span className="teil-tab-sub">Formelles Schreiben</span>
-          <span className="teil-progress-badge">{t2Words} Wörter</span>
+          <span className="teil-progress-badge">
+            {isTeilReady(teil2) ? `${t2Words} Wörter` : '⏳'}
+          </span>
         </button>
       </div>
 
@@ -165,6 +176,13 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
       <div className="writing-workspace">
         {/* ======================= WRITING TEIL 1 ======================= */}
         {activeTeil === 1 && (
+          !isTeilReady(teil1) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Schreiben Teil 1 wird gerade von der KI generiert...</h3>
+              <p>Bitte haben Sie einen kurzen Moment Geduld.</p>
+            </div>
+          ) : (
           <div className="writing-card-panel glass-panel">
             <div className="task-header-row">
               <div>
@@ -212,10 +230,17 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
               ></textarea>
             </div>
           </div>
-        )}
+        ))}
 
         {/* ======================= WRITING TEIL 2 ======================= */}
         {activeTeil === 2 && (
+          !isTeilReady(teil2) ? (
+            <div className="glass-panel teil-generating-placeholder">
+              <div className="spinner-large"></div>
+              <h3>Schreiben Teil 2 wird gerade im Hintergrund von der KI generiert...</h3>
+              <p>Sie können bereits Teil 1 bearbeiten.</p>
+            </div>
+          ) : (
           <div className="writing-card-panel glass-panel">
             <div className="task-header-row">
               <div>
@@ -263,7 +288,7 @@ export default function SchreibenTest({ paper, onResetPaper, onSubmitExam, onBac
               ></textarea>
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Bottom Nav Bar */}
