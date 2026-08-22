@@ -82,8 +82,10 @@ export default function App() {
     setExamError(null);
     setPaper(null);
 
+    let receivedAnyTeil = false;
+
+    // 1. Try progressive SSE streaming endpoint
     try {
-      // 1. Try progressive SSE streaming endpoint
       const res = await fetch('/api/exam_generate_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,95 +97,144 @@ export default function App() {
         const decoder = new TextDecoder();
         let buffer = '';
         let streamActive = true;
-        let receivedAnyTeil = false;
+        let currentPaperId = null;
 
         while (streamActive) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          try {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith('data:')) continue;
-            const jsonStr = trimmed.replace(/^data:\s*/, '');
-            try {
-              const event = JSON.parse(jsonStr);
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || !trimmed.startsWith('data:')) continue;
+              const jsonStr = trimmed.replace(/^data:\s*/, '');
+              try {
+                const event = JSON.parse(jsonStr);
 
-              if (event.type === 'init') {
-                setPaper({
-                  paper_id: event.paper_id,
-                  module: event.module,
-                  level: event.level,
-                  created_at: event.created_at,
-                  duration_minutes: event.duration_minutes || 30,
-                  total_points: event.total_points || 25.0,
-                  total_teils: event.total_teils,
-                  teils: {},
-                  is_streaming: true
-                });
-              } else if (event.type === 'teil') {
-                receivedAnyTeil = true;
-                setPaper(prev => ({
-                  ...(prev || {}),
-                  paper_id: prev?.paper_id || event.paper_id,
-                  module: prev?.module || module,
-                  level: prev?.level || 'A2',
-                  duration_minutes: prev?.duration_minutes || 30,
-                  total_points: prev?.total_points || 25.0,
-                  teils: {
-                    ...(prev?.teils || {}),
-                    [event.teil_name]: event.data
-                  },
-                  is_streaming: true
-                }));
-                // Reveal the exam UI immediately once the first Teil is generated!
-                setLoadingExam(false);
-              } else if (event.type === 'done') {
-                setPaper({
-                  ...event.paper,
-                  is_streaming: false
-                });
-                setLoadingExam(false);
-                streamActive = false;
-              } else if (event.type === 'error') {
-                throw new Error(event.error || 'Streaming error occurred');
+                if (event.type === 'init') {
+                  currentPaperId = event.paper_id;
+                  setPaper({
+                    paper_id: event.paper_id,
+                    module: event.module,
+                    level: event.level,
+                    created_at: event.created_at,
+                    duration_minutes: event.duration_minutes || 30,
+                    total_points: event.total_points || 25.0,
+                    total_teils: event.total_teils,
+                    teils: {},
+                    is_streaming: true
+                  });
+                } else if (event.type === 'teil') {
+                  receivedAnyTeil = true;
+                  setPaper(prev => ({
+                    ...(prev || {}),
+                    paper_id: prev?.paper_id || event.paper_id || currentPaperId,
+                    module: prev?.module || module,
+                    level: prev?.level || 'A2',
+                    duration_minutes: prev?.duration_minutes || 30,
+                    total_points: prev?.total_points || 25.0,
+                    teils: {
+                      ...(prev?.teils || {}),
+                      [event.teil_name]: event.data
+                    },
+                    is_streaming: true
+                  }));
+                  setLoadingExam(false);
+                  setExamError(null);
+                } else if (event.type === 'done') {
+                  setPaper(prev => ({
+                    ...(event.paper || prev),
+                    is_streaming: false
+                  }));
+                  setLoadingExam(false);
+                  setExamError(null);
+                  streamActive = false;
+                }
+              } catch (pErr) {
+                console.warn('Error parsing SSE event:', pErr, jsonStr);
               }
-            } catch (pErr) {
-              console.warn('Error parsing SSE event:', pErr, jsonStr);
             }
+          } catch (readErr) {
+            console.warn('SSE stream read completed or closed:', readErr);
+            break;
           }
         }
 
         if (receivedAnyTeil) {
+          setLoadingExam(false);
+          setExamError(null);
+
+          // Self-healing: if stream disconnected early, poll Redis until all Teile are loaded
+          const neededTeils = module === 'lesen' ? 4 : 2;
+          if (currentPaperId) {
+            let pollAttempts = 0;
+            const pollInterval = setInterval(async () => {
+              pollAttempts++;
+              if (pollAttempts > 20) {
+                clearInterval(pollInterval);
+                return;
+              }
+              try {
+                const loadRes = await fetch('/api/exam_load_paper', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ paper_id: currentPaperId })
+                });
+                if (loadRes.ok) {
+                  const loadData = await loadRes.json();
+                  if (loadData.paper && loadData.paper.teils) {
+                    const loadedCount = Object.keys(loadData.paper.teils).length;
+                    setPaper(prev => ({
+                      ...(loadData.paper),
+                      is_streaming: loadedCount < neededTeils
+                    }));
+                    if (loadedCount >= neededTeils) {
+                      clearInterval(pollInterval);
+                    }
+                  }
+                }
+              } catch (pollErr) {
+                console.warn('Paper recovery poll error:', pollErr);
+              }
+            }, 3000);
+          }
           return;
         }
       }
+    } catch (streamErr) {
+      console.warn('SSE Streaming connection failed, falling back to sync endpoint:', streamErr);
+    }
 
-      // 2. Fallback to standard synchronous endpoint if stream unavailable
-      const fallbackRes = await fetch('/api/exam_generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, level: 'A2' })
-      });
+    // 2. Fallback to standard synchronous endpoint if stream produced no teils
+    if (!receivedAnyTeil) {
+      try {
+        const fallbackRes = await fetch('/api/exam_generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ module, level: 'A2' })
+        });
 
-      if (!fallbackRes.ok) {
-        throw new Error(`Server returned error status ${fallbackRes.status}`);
+        if (!fallbackRes.ok) {
+          throw new Error(`Server returned error status ${fallbackRes.status}`);
+        }
+
+        const paperData = await fallbackRes.json();
+        if (paperData.error) {
+          throw new Error(paperData.error);
+        }
+
+        setPaper(paperData);
+        setExamError(null);
+      } catch (err) {
+        console.error('Failed to generate exam paper:', err);
+        setExamError(err.message || 'Failed to generate test paper. Please check server status.');
+      } finally {
+        setLoadingExam(false);
       }
-
-      const paperData = await fallbackRes.json();
-      if (paperData.error) {
-        throw new Error(paperData.error);
-      }
-
-      setPaper(paperData);
-    } catch (err) {
-      console.error('Failed to generate exam paper:', err);
-      setExamError(err.message || 'Failed to generate test paper. Please check server status.');
-    } finally {
-      setLoadingExam(false);
     }
   };
 
@@ -346,7 +397,7 @@ export default function App() {
         )}
 
         {/* Error Display */}
-        {examError && !loadingExam && (
+        {examError && !loadingExam && !paper && (
           <div className="exam-error-container glass-panel">
             <div className="error-icon">⚠️</div>
             <h3>Could Not Load Exam</h3>
