@@ -22,7 +22,7 @@ const A2_EXAM_VOCAB_LOADER = [
 
 export default function App() {
   // Navigation View: 'landing' | 'lesen' | 'schreiben' | 'scorecard' | 'practice'
-  const [currentView, setCurrentView] = useState('landing');
+  const [currentView, setCurrentView] = useState('practice');
 
   // Exam States
   const [activeModule, setActiveModule] = useState(null); // 'lesen' | 'schreiben'
@@ -187,6 +187,42 @@ export default function App() {
     }
   };
 
+  // Load an existing saved question paper from Redis
+  const handleLoadSavedPaper = async (paperId) => {
+    setLoadingExam(true);
+    setExamError(null);
+    setPaper(null);
+
+    try {
+      const res = await fetch('/api/exam_load_paper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paper_id: paperId })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to load saved paper (status ${res.status})`);
+      }
+
+      const data = await res.json();
+      if (data.error || !data.paper) {
+        throw new Error(data.error || 'Paper not found in Redis storage.');
+      }
+
+      const loadedPaper = data.paper;
+      const mod = loadedPaper.module || 'lesen';
+      setPaper(loadedPaper);
+      setActiveModule(mod);
+      setCurrentView(mod);
+    } catch (err) {
+      console.error('Failed to load saved paper:', err);
+      setExamError(err.message || 'Failed to load saved paper.');
+      setCurrentView('landing');
+    } finally {
+      setLoadingExam(false);
+    }
+  };
+
   // Reset / New Paper for current module
   const handleResetPaper = async (module) => {
     await handleStartExam(module);
@@ -330,6 +366,7 @@ export default function App() {
         {currentView === 'landing' && !loadingExam && (
           <LandingPage
             onStartExam={handleStartExam}
+            onLoadSavedPaper={handleLoadSavedPaper}
             onOpenPractice={() => setCurrentView('practice')}
             theme={theme}
             setTheme={setTheme}

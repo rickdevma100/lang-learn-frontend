@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
 
-export default function LandingPage({ onStartExam, onOpenPractice, theme, setTheme }) {
+export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPractice, theme, setTheme }) {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Saved Question Papers state (persisted in Redis)
+  const [savedPapers, setSavedPapers] = useState([]);
+  const [loadingSavedPapers, setLoadingSavedPapers] = useState(false);
+  const [paperFilter, setPaperFilter] = useState('all');
+  const [deletingId, setDeletingId] = useState(null);
+
   useEffect(() => {
     fetchHistory();
+    fetchSavedPapers();
   }, []);
 
   const fetchHistory = async () => {
@@ -25,6 +32,47 @@ export default function LandingPage({ onStartExam, onOpenPractice, theme, setThe
     }
   };
 
+  const fetchSavedPapers = async () => {
+    setLoadingSavedPapers(true);
+    try {
+      const res = await fetch('/api/exam_saved_papers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'pending', limit: 20 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.papers) {
+          setSavedPapers(data.papers);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load saved papers:', e);
+    } finally {
+      setLoadingSavedPapers(false);
+    }
+  };
+
+  const handleDeleteSavedPaper = async (e, paperId) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this saved test paper from Redis?')) return;
+    setDeletingId(paperId);
+    try {
+      const res = await fetch('/api/exam_delete_paper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paper_id: paperId })
+      });
+      if (res.ok) {
+        setSavedPapers(prev => prev.filter(p => p.paper_id !== paperId));
+      }
+    } catch (err) {
+      console.error('Failed to delete saved paper:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const formatDate = (isoStr) => {
     if (!isoStr) return '';
     try {
@@ -34,6 +82,11 @@ export default function LandingPage({ onStartExam, onOpenPractice, theme, setThe
       return isoStr;
     }
   };
+
+  const filteredPapers = savedPapers.filter(p => {
+    if (paperFilter === 'all') return true;
+    return p.module === paperFilter;
+  });
 
   return (
     <div className="landing-container">
@@ -158,11 +211,108 @@ export default function LandingPage({ onStartExam, onOpenPractice, theme, setThe
         </div>
       </div>
 
+      {/* Saved Question Papers Section (Cached on Redis) */}
+      <div className="saved-papers-section glass-panel">
+        <div className="section-header-row">
+          <div className="section-title-group">
+            <div className="section-badge-tag">
+              <span className="redis-pulse-dot"></span>
+              <span>Redis Cache Registry</span>
+            </div>
+            <h3>📁 Saved Question Papers</h3>
+            <p className="section-subtitle">
+              Generated papers stored in Redis under keys like <code>Question Paper 1</code>, <code>Question Paper 2</code>. You can appear for the tests anytime!
+            </p>
+          </div>
+          <div className="section-header-actions">
+            <div className="filter-pill-group">
+              <button
+                className={`filter-pill-btn ${paperFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setPaperFilter('all')}
+              >
+                All ({savedPapers.length})
+              </button>
+              <button
+                className={`filter-pill-btn ${paperFilter === 'lesen' ? 'active' : ''}`}
+                onClick={() => setPaperFilter('lesen')}
+              >
+                📖 Lesen ({savedPapers.filter(p => p.module === 'lesen').length})
+              </button>
+              <button
+                className={`filter-pill-btn ${paperFilter === 'schreiben' ? 'active' : ''}`}
+                onClick={() => setPaperFilter('schreiben')}
+              >
+                ✍️ Schreiben ({savedPapers.filter(p => p.module === 'schreiben').length})
+              </button>
+            </div>
+            <button className="refresh-history-btn" onClick={fetchSavedPapers} title="Refresh Saved Papers">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {loadingSavedPapers ? (
+          <div className="history-loading">
+            <div className="spinner-small"></div>
+            <span>Fetching saved question papers from Redis...</span>
+          </div>
+        ) : filteredPapers.length === 0 ? (
+          <div className="history-empty">
+            <p>
+              {paperFilter === 'all'
+                ? "No saved papers waiting. When you start an exam paper, it will be automatically cached in Redis so you can appear for it later!"
+                : `No saved ${paperFilter} papers found.`}
+            </p>
+          </div>
+        ) : (
+          <div className="saved-papers-grid">
+            {filteredPapers.map((p, idx) => (
+              <div key={p.paper_id} className="saved-paper-card">
+                <div className="saved-paper-header">
+                  <span className={`hist-mod-tag ${p.module}`}>
+                    {p.module === 'lesen' ? '📖 Lesen (Reading)' : '✍️ Schreiben (Writing)'}
+                  </span>
+                  <span className="saved-paper-level">Goethe {p.level || 'A2'}</span>
+                </div>
+                <h4 className="saved-paper-label">
+                  {p.label || `Question Paper ${idx + 1}`}
+                </h4>
+                <div className="saved-paper-meta-row">
+                  <span>⏱️ {p.duration_minutes || 30} Min</span>
+                  <span>🎯 {p.total_points || 25} Pkt</span>
+                  <span>📅 {formatDate(p.created_at)}</span>
+                </div>
+                <div className="saved-paper-footer">
+                  <button
+                    className="resume-paper-btn"
+                    onClick={() => onLoadSavedPaper && onLoadSavedPaper(p.paper_id)}
+                  >
+                    <span>▶️ Take Test Now</span>
+                  </button>
+                  <button
+                    className="delete-paper-btn"
+                    onClick={(e) => handleDeleteSavedPaper(e, p.paper_id)}
+                    disabled={deletingId === p.paper_id}
+                    title="Delete paper from Redis"
+                  >
+                    {deletingId === p.paper_id ? '...' : '🗑️'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Test History Section */}
       <div className="history-section glass-panel">
         <div className="history-header">
           <div className="history-title-group">
-            <h3>Recent Exam Attempts (Stored on Redis)</h3>
+            <h3>Recent Exam Attempts (Completed & Graded)</h3>
             <p className="history-subtitle">Track your past performance and Goethe A2 pass records</p>
           </div>
           <button className="refresh-history-btn" onClick={fetchHistory} title="Refresh History">
