@@ -4,6 +4,7 @@ import LesenTest from './components/LesenTest';
 import SchreibenTest from './components/SchreibenTest';
 import ExamScorecard from './components/ExamScorecard';
 import DialogPractice from './components/DialogPractice';
+import TextPoolManager from './components/TextPoolManager';
 
 const A2_EXAM_VOCAB_LOADER = [
   { german: "das Leseverstehen", english: "reading comprehension" },
@@ -21,7 +22,7 @@ const A2_EXAM_VOCAB_LOADER = [
 ];
 
 export default function App() {
-  // Navigation View: 'landing' | 'lesen' | 'schreiben' | 'scorecard' | 'practice'
+  // Navigation View: 'landing' | 'lesen' | 'schreiben' | 'scorecard' | 'practice' | 'textpool'
   const [currentView, setCurrentView] = useState('practice');
 
   // Exam States
@@ -349,6 +350,12 @@ export default function App() {
             >
               💬 Dialog Practice
             </button>
+            <button
+              className={`header-nav-btn ${currentView === 'textpool' ? 'active' : ''}`}
+              onClick={() => setCurrentView('textpool')}
+            >
+              📚 Manage Texts
+            </button>
           </nav>
 
           <button
@@ -458,6 +465,13 @@ export default function App() {
         {/* 5. Dialog Practice View */}
         {currentView === 'practice' && (
           <DialogPractice
+            onBackToHome={() => setCurrentView('landing')}
+          />
+        )}
+
+        {/* 6. Text Pool Manager View */}
+        {currentView === 'textpool' && (
+          <TextPoolManager
             onBackToHome={() => setCurrentView('landing')}
           />
         )}
