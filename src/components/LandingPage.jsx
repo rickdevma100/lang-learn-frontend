@@ -10,10 +10,26 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
   const [paperFilter, setPaperFilter] = useState('all');
   const [deletingId, setDeletingId] = useState(null);
 
+  // Exam Selection Modal State: 'lesen' | 'schreiben' | null
+  const [examPromptModule, setExamPromptModule] = useState(null);
+  // Modal View Mode: 'choose' (New vs Existing) | 'saved_list' (Browse Redis Cache)
+  const [examPromptMode, setExamPromptMode] = useState('choose');
+
   useEffect(() => {
     fetchHistory();
     fetchSavedPapers();
   }, []);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && examPromptModule) {
+        setExamPromptModule(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [examPromptModule]);
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -38,7 +54,7 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
       const res = await fetch('/api/exam_saved_papers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'pending', limit: 20 })
+        body: JSON.stringify({ status: 'all', limit: 30 })
       });
       if (res.ok) {
         const data = await res.json();
@@ -51,6 +67,12 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
     } finally {
       setLoadingSavedPapers(false);
     }
+  };
+
+  const handleOpenExamModal = (module) => {
+    setExamPromptModule(module);
+    setExamPromptMode('choose');
+    fetchSavedPapers();
   };
 
   const handleDeleteSavedPaper = async (e, paperId) => {
@@ -87,6 +109,8 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
     if (paperFilter === 'all') return true;
     return p.module === paperFilter;
   });
+
+  const modalFilteredPapers = savedPapers.filter(p => p.module === examPromptModule);
 
   return (
     <div className="landing-container">
@@ -131,9 +155,9 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
           <button
             id="btn-start-reading"
             className="card-action-btn reading-btn"
-            onClick={() => onStartExam('lesen')}
+            onClick={() => handleOpenExamModal('lesen')}
           >
-            <span>Start Reading Test</span>
+            <span>Take Reading Test</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -166,9 +190,9 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
           <button
             id="btn-start-writing"
             className="card-action-btn writing-btn"
-            onClick={() => onStartExam('schreiben')}
+            onClick={() => handleOpenExamModal('schreiben')}
           >
-            <span>Start Writing Test</span>
+            <span>Take Writing Test</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -368,6 +392,218 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
           </div>
         )}
       </div>
+
+      {/* =========================================================================
+          EXAM CHOICE / REDIS SELECTION MODAL
+          ========================================================================= */}
+      {examPromptModule && (
+        <div className="modal-backdrop" onClick={() => setExamPromptModule(null)}>
+          <div className="exam-choice-modal glass-panel" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="exam-choice-modal-header">
+              <div className="modal-header-badge">
+                <span className="badge-dot"></span>
+                <span>
+                  Modul: {examPromptModule === 'lesen' ? 'Lesen (Reading Comprehension)' : 'Schreiben (Writing Expression)'}
+                </span>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setExamPromptModule(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="exam-choice-modal-title-group">
+              <h2>
+                {examPromptModule === 'lesen' ? '📖 Start Goethe A2 Reading Exam' : '✍️ Start Goethe A2 Writing Exam'}
+              </h2>
+              <p>
+                {examPromptMode === 'choose'
+                  ? 'Would you like to generate a brand new exam paper, or appear for an existing test cached in Redis?'
+                  : `Select one of the saved ${examPromptModule === 'lesen' ? 'Lesen' : 'Schreiben'} question papers from Redis:`}
+              </p>
+            </div>
+
+            {/* Mode 1: Choose (New vs Existing) */}
+            {examPromptMode === 'choose' && (
+              <div className="exam-options-grid">
+                {/* Option 1: New Exam */}
+                <div
+                  className="exam-option-card new-exam-option"
+                  onClick={() => {
+                    setExamPromptModule(null);
+                    onStartExam(examPromptModule);
+                  }}
+                >
+                  <div className="option-card-glow"></div>
+                  <div className="option-icon-wrapper new-exam-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </div>
+                  <div className="option-card-content">
+                    <div className="option-tag-pill new-tag">✨ Recommended</div>
+                    <h3>Generate New Exam</h3>
+                    <p>
+                      Generate a completely fresh, authentic Goethe A2 paper with {examPromptModule === 'lesen' ? '4 Teile & 20 questions' : '2 writing tasks'} powered by Metal AI.
+                    </p>
+                    <div className="option-features-list">
+                      <span>✓ 100% Unique Questions</span>
+                      <span>✓ Official A2 Standards</span>
+                      <span>✓ Auto-saved to Redis</span>
+                    </div>
+                  </div>
+                  <button className="option-action-btn new-btn">
+                    <span>⚡ Generate & Start Exam</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Option 2: Existing Exam from Redis */}
+                <div
+                  className="exam-option-card existing-exam-option"
+                  onClick={() => setExamPromptMode('saved_list')}
+                >
+                  <div className="option-card-glow"></div>
+                  <div className="option-icon-wrapper existing-exam-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </div>
+                  <div className="option-card-content">
+                    <div className="option-tag-pill redis-tag">
+                      <span className="redis-mini-dot"></span>
+                      <span>{modalFilteredPapers.length} Available in Redis</span>
+                    </div>
+                    <h3>Appear for Existing Exam</h3>
+                    <p>
+                      Select and take one of the previously generated question papers cached in your Redis registry.
+                    </p>
+                    <div className="option-features-list">
+                      <span>✓ Instant load (0s wait)</span>
+                      <span>✓ Compare past attempts</span>
+                      <span>✓ Retake any test</span>
+                    </div>
+                  </div>
+                  <button className="option-action-btn existing-btn">
+                    <span>📁 Browse Saved Papers ({modalFilteredPapers.length})</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mode 2: Saved Papers List View */}
+            {examPromptMode === 'saved_list' && (
+              <div className="modal-saved-papers-view">
+                <div className="modal-saved-papers-topbar">
+                  <button
+                    className="modal-back-btn"
+                    onClick={() => setExamPromptMode('choose')}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Choices</span>
+                  </button>
+
+                  <div className="modal-topbar-info">
+                    <span className="modal-redis-count">
+                      📁 {modalFilteredPapers.length} {examPromptModule === 'lesen' ? 'Lesen' : 'Schreiben'} Papers in Redis
+                    </span>
+                    <button
+                      className="refresh-history-btn modal-refresh"
+                      onClick={fetchSavedPapers}
+                      title="Refresh from Redis"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {loadingSavedPapers ? (
+                  <div className="modal-saved-loading">
+                    <div className="spinner-small"></div>
+                    <span>Loading saved papers from Redis...</span>
+                  </div>
+                ) : modalFilteredPapers.length === 0 ? (
+                  <div className="modal-saved-empty">
+                    <div className="empty-icon">📭</div>
+                    <h4>No Saved {examPromptModule === 'lesen' ? 'Lesen' : 'Schreiben'} Papers in Redis</h4>
+                    <p>No cached papers exist for this module yet. You can generate a new one right now!</p>
+                    <button
+                      className="modal-primary-action-btn"
+                      onClick={() => {
+                        setExamPromptModule(null);
+                        onStartExam(examPromptModule);
+                      }}
+                    >
+                      <span>🚀 Generate New Exam Now</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="modal-saved-papers-scroll">
+                    {modalFilteredPapers.map((p, idx) => (
+                      <div key={p.paper_id} className="modal-saved-paper-row">
+                        <div className="modal-paper-info">
+                          <div className="modal-paper-title-row">
+                            <span className="modal-paper-badge">
+                              {p.module === 'lesen' ? '📖 Lesen' : '✍️ Schreiben'}
+                            </span>
+                            <span className="modal-paper-label-text">
+                              {p.label || `Question Paper ${idx + 1}`}
+                            </span>
+                          </div>
+                          <div className="modal-paper-meta">
+                            <span>⏱️ {p.duration_minutes || 30} Min</span>
+                            <span>🎯 {p.total_points || 25} Pkt</span>
+                            <span>📅 {formatDate(p.created_at)}</span>
+                            {p.module === 'lesen' && <span>📰 4 Teile / 20 Items</span>}
+                          </div>
+                        </div>
+
+                        <div className="modal-paper-actions">
+                          <button
+                            className="modal-take-exam-btn"
+                            onClick={() => {
+                              setExamPromptModule(null);
+                              onLoadSavedPaper && onLoadSavedPaper(p.paper_id);
+                            }}
+                          >
+                            <span>▶️ Appear for Exam</span>
+                          </button>
+                          <button
+                            className="modal-delete-btn"
+                            onClick={(e) => handleDeleteSavedPaper(e, p.paper_id)}
+                            disabled={deletingId === p.paper_id}
+                            title="Delete from Redis"
+                          >
+                            {deletingId === p.paper_id ? '...' : '🗑️'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
