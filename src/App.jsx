@@ -5,6 +5,7 @@ import SchreibenTest from './components/SchreibenTest';
 import ExamScorecard from './components/ExamScorecard';
 import DialogPractice from './components/DialogPractice';
 import TextPoolManager from './components/TextPoolManager';
+import ExamChoiceModal from './components/ExamChoiceModal';
 
 const A2_EXAM_VOCAB_LOADER = [
   { german: "das Leseverstehen", english: "reading comprehension" },
@@ -32,6 +33,7 @@ export default function App() {
   const [examError, setExamError] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [examChoiceModule, setExamChoiceModule] = useState(null); // 'lesen' | 'schreiben' | null
 
   // Vocabulary loader rotation during test paper generation
   const [currentLoaderVocab, setCurrentLoaderVocab] = useState(null);
@@ -334,13 +336,13 @@ export default function App() {
             </button>
             <button
               className={`header-nav-btn ${currentView === 'lesen' ? 'active' : ''}`}
-              onClick={() => handleStartExam('lesen')}
+              onClick={() => setExamChoiceModule('lesen')}
             >
               📖 Reading Exam
             </button>
             <button
               className={`header-nav-btn ${currentView === 'schreiben' ? 'active' : ''}`}
-              onClick={() => handleStartExam('schreiben')}
+              onClick={() => setExamChoiceModule('schreiben')}
             >
               ✍️ Writing Exam
             </button>
@@ -424,6 +426,7 @@ export default function App() {
         {currentView === 'landing' && !loadingExam && (
           <LandingPage
             onStartExam={handleStartExam}
+            onPromptExamChoice={(mod) => setExamChoiceModule(mod)}
             onLoadSavedPaper={handleLoadSavedPaper}
             onOpenPractice={() => setCurrentView('practice')}
             theme={theme}
@@ -476,6 +479,14 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Global Exam Choice Modal (New vs Existing Redis Exam) */}
+      <ExamChoiceModal
+        module={examChoiceModule}
+        onClose={() => setExamChoiceModule(null)}
+        onStartNewExam={(mod) => handleStartExam(mod)}
+        onSelectSavedPaper={(paperId) => handleLoadSavedPaper(paperId)}
+      />
     </div>
   );
 }

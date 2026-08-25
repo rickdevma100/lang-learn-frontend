@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPractice, theme, setTheme }) {
+export default function LandingPage({ onStartExam, onPromptExamChoice, onLoadSavedPaper, onOpenPractice, theme, setTheme }) {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -14,6 +14,16 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
   const [examPromptModule, setExamPromptModule] = useState(null);
   // Modal View Mode: 'choose' (New vs Existing) | 'saved_list' (Browse Redis Cache)
   const [examPromptMode, setExamPromptMode] = useState('choose');
+
+  const handleOpenExamModal = (module) => {
+    if (onPromptExamChoice) {
+      onPromptExamChoice(module);
+    } else {
+      setExamPromptModule(module);
+      setExamPromptMode('choose');
+      fetchSavedPapers();
+    }
+  };
 
   useEffect(() => {
     fetchHistory();
@@ -54,7 +64,7 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
       const res = await fetch('/api/exam_saved_papers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'all', limit: 30 })
+        body: JSON.stringify({ status: 'all', limit: 50 })
       });
       if (res.ok) {
         const data = await res.json();
@@ -69,11 +79,6 @@ export default function LandingPage({ onStartExam, onLoadSavedPaper, onOpenPract
     }
   };
 
-  const handleOpenExamModal = (module) => {
-    setExamPromptModule(module);
-    setExamPromptMode('choose');
-    fetchSavedPapers();
-  };
 
   const handleDeleteSavedPaper = async (e, paperId) => {
     e.stopPropagation();
