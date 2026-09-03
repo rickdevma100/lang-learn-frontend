@@ -119,8 +119,8 @@ const A2_VOCAB_LOADER_LIST = [
   { german: "der Freund / die Freundin", english: "friend (male / female)" }
 ];
 
-export default function DialogPractice({ onBackToHome }) {
-  const [activeTab, setActiveTab] = useState('dialogue'); // 'dialogue' or 'explain'
+export default function DialogPractice({ onBackToHome, initialTab, initialWord }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'dialogue'); // 'dialogue' or 'explain'
 
   // Dialogue states
   const [scenario, setScenario] = useState('ordering a hot chocolate');
@@ -137,7 +137,7 @@ export default function DialogPractice({ onBackToHome }) {
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Word Explainer states
-  const [word, setWord] = useState('Ausbildung');
+  const [word, setWord] = useState(initialWord || 'Ausbildung');
   const [loadingWord, setLoadingWord] = useState(false);
   const [wordData, setWordData] = useState(null);
   const [wordError, setWordError] = useState(null);
@@ -428,6 +428,19 @@ export default function DialogPractice({ onBackToHome }) {
     e.preventDefault();
     explainWordByName(word);
   };
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+    if (initialWord) {
+      const clean = initialWord.replace(/[^a-zA-ZäöüÄÖÜß]/g, '');
+      if (clean) {
+        setWord(clean);
+        explainWordByName(clean);
+      }
+    }
+  }, [initialTab, initialWord]);
 
   const handleWordClick = (clickedWord) => {
     const cleaned = clickedWord.replace(/[^a-zA-ZäöüÄÖÜß]/g, '');

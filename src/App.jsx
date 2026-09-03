@@ -34,6 +34,8 @@ export default function App() {
   const [evaluation, setEvaluation] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [examChoiceModule, setExamChoiceModule] = useState(null); // 'lesen' | 'schreiben' | null
+  const [practiceTab, setPracticeTab] = useState('dialogue');
+  const [wordToExplain, setWordToExplain] = useState('');
 
   // Vocabulary loader rotation during test paper generation
   const [currentLoaderVocab, setCurrentLoaderVocab] = useState(null);
@@ -320,45 +322,12 @@ export default function App() {
     <div className="app-container">
       {/* Universal App Header */}
       <header className="app-header">
-        <div className="brand" onClick={() => setCurrentView('landing')} style={{ cursor: 'pointer' }}>
-          <div className="brand-icon">L</div>
-          <h1 className="brand-title">LangLearn</h1>
-          <span className="brand-sub-badge">Goethe A2</span>
-        </div>
-
-        <div className="header-right">
-          <nav className="header-nav">
-            <button
-              className={`header-nav-btn ${currentView === 'landing' ? 'active' : ''}`}
-              onClick={() => setCurrentView('landing')}
-            >
-              🏠 Home
-            </button>
-            <button
-              className={`header-nav-btn ${currentView === 'lesen' ? 'active' : ''}`}
-              onClick={() => setExamChoiceModule('lesen')}
-            >
-              📖 Reading Exam
-            </button>
-            <button
-              className={`header-nav-btn ${currentView === 'schreiben' ? 'active' : ''}`}
-              onClick={() => setExamChoiceModule('schreiben')}
-            >
-              ✍️ Writing Exam
-            </button>
-            <button
-              className={`header-nav-btn ${currentView === 'practice' ? 'active' : ''}`}
-              onClick={() => setCurrentView('practice')}
-            >
-              💬 Dialog Practice
-            </button>
-            <button
-              className={`header-nav-btn ${currentView === 'textpool' ? 'active' : ''}`}
-              onClick={() => setCurrentView('textpool')}
-            >
-              📚 Manage Texts
-            </button>
-          </nav>
+        <div className="header-top-bar">
+          <div className="brand" onClick={() => setCurrentView('landing')} style={{ cursor: 'pointer' }}>
+            <div className="brand-icon">L</div>
+            <h1 className="brand-title">LangLearn</h1>
+            <span className="brand-sub-badge">Goethe A2</span>
+          </div>
 
           <button
             className="theme-toggle-btn"
@@ -385,6 +354,44 @@ export default function App() {
             )}
           </button>
         </div>
+
+        <nav className="header-nav">
+          <button
+            className={`header-nav-btn ${currentView === 'landing' ? 'active' : ''}`}
+            onClick={() => setCurrentView('landing')}
+          >
+            <span className="nav-icon">🏠</span>
+            <span className="nav-label">Home</span>
+          </button>
+          <button
+            className={`header-nav-btn ${currentView === 'lesen' ? 'active' : ''}`}
+            onClick={() => setExamChoiceModule('lesen')}
+          >
+            <span className="nav-icon">📖</span>
+            <span className="nav-label">Reading Exam</span>
+          </button>
+          <button
+            className={`header-nav-btn ${currentView === 'schreiben' ? 'active' : ''}`}
+            onClick={() => setExamChoiceModule('schreiben')}
+          >
+            <span className="nav-icon">✍️</span>
+            <span className="nav-label">Writing Exam</span>
+          </button>
+          <button
+            className={`header-nav-btn ${currentView === 'practice' ? 'active' : ''}`}
+            onClick={() => setCurrentView('practice')}
+          >
+            <span className="nav-icon">💬</span>
+            <span className="nav-label">Dialog Practice</span>
+          </button>
+          <button
+            className={`header-nav-btn ${currentView === 'textpool' ? 'active' : ''}`}
+            onClick={() => setCurrentView('textpool')}
+          >
+            <span className="nav-icon">📚</span>
+            <span className="nav-label">Manage Texts</span>
+          </button>
+        </nav>
       </header>
 
       {/* Main View Area */}
@@ -469,6 +476,8 @@ export default function App() {
         {currentView === 'practice' && (
           <DialogPractice
             onBackToHome={() => setCurrentView('landing')}
+            initialTab={practiceTab}
+            initialWord={wordToExplain}
           />
         )}
 
@@ -476,6 +485,11 @@ export default function App() {
         {currentView === 'textpool' && (
           <TextPoolManager
             onBackToHome={() => setCurrentView('landing')}
+            onOpenWordExplainer={(w) => {
+              setWordToExplain(w);
+              setPracticeTab('explain');
+              setCurrentView('practice');
+            }}
           />
         )}
       </main>
