@@ -60,6 +60,7 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
   const [wordError, setWordError] = useState(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const audioRef = useRef(null);
+  const audioCacheRef = useRef(new Map());
 
   const apiBase = '/api';
 
@@ -133,31 +134,46 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
   // Play TTS audio pronunciation for the word
   const handlePlayWordAudio = async (textToSpeak) => {
     if (!textToSpeak) return;
-    setAudioLoading(true);
-    try {
-      const res = await fetch(`${apiBase}/tts_synthesize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: textToSpeak,
-          language: 'German',
-          speaker_role: 'default'
-        })
-      });
-      if (!res.ok) throw new Error(`Audio status ${res.status}`);
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.play();
-      } else {
-        const audio = new Audio(audioUrl);
-        audio.play();
+    const cacheKey = `word|${textToSpeak}`;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    let audioUrl = audioCacheRef.current.get(cacheKey);
+
+    if (!audioUrl) {
+      setAudioLoading(true);
+      try {
+        const res = await fetch(`${apiBase}/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: textToSpeak,
+            language: 'German',
+            level: 'A2',
+            speaker: 'default'
+          })
+        });
+        if (!res.ok) throw new Error(`Audio status ${res.status}`);
+        const blob = await res.blob();
+        audioUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, audioUrl);
+      } catch (e) {
+        console.warn('TTS playback error:', e);
+        return;
+      } finally {
+        setAudioLoading(false);
       }
-    } catch (e) {
-      console.warn('TTS playback error:', e);
-    } finally {
-      setAudioLoading(false);
+    }
+
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch(err => console.warn('Audio play error:', err));
+    } else {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(err => console.warn('Audio play error:', err));
     }
   };
 
