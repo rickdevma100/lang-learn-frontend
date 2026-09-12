@@ -48,6 +48,29 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
   const [texts, setTexts] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
+  // Input mode: 'form' (plain text, default) or 'json' (raw json)
+  const [inputMode, setInputMode] = useState('form');
+
+  // Plain text form fields
+  const [formTitle, setFormTitle] = useState('');
+  const [formCategory, setFormCategory] = useState('zeitung');
+  const [formText, setFormText] = useState('');
+  const [formSender, setFormSender] = useState('');
+  const [formRecipient, setFormRecipient] = useState('');
+  const [formSubject, setFormSubject] = useState('');
+  const [formDirectory, setFormDirectory] = useState([
+    { floor: '2. Stock', departments: 'Sportartikel, Fahrräder, Outdoor, Camping' },
+    { floor: '1. Stock', departments: 'Damenmode, Herrenmode, Schuhe, Taschen' },
+    { floor: 'Erdgeschoss (EG)', departments: 'Bäckerei, Zeitschriften, Kosmetik, Information' },
+    { floor: 'Untergeschoss (UG)', departments: 'Supermarkt, Drogerie, Parkhaus' }
+  ]);
+  const [formAds, setFormAds] = useState([
+    { id: 'a', title: 'Fitnessclub Aktiv', text: 'Training ab 19 € pro Monat. Mo-So 6-23 Uhr. Kostenloses Probetraining!' },
+    { id: 'b', title: 'Tanzschule Rhythmus', text: 'Salsa- und Standard-Tanzkurse für Anfänger jeden Freitag 19 Uhr.' },
+    { id: 'c', title: 'Kletterhalle Gipfelstürmer', text: 'Kletterwände für alle Level. Ausrüstung zum Ausleihen vorhanden.' }
+  ]);
+  const [showSmartPasteModal, setShowSmartPasteModal] = useState(false);
+  const [smartPasteInput, setSmartPasteInput] = useState('');
   const [newTextJson, setNewTextJson] = useState('');
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
@@ -202,29 +225,264 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
     });
   };
 
+  // Directory helpers (Teil 2)
+  const handleUpdateDirRow = (index, field, value) => {
+    setFormDirectory(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddDirRow = () => {
+    setFormDirectory(prev => [
+      ...prev,
+      { floor: `${prev.length + 1}. Stock`, departments: '' }
+    ]);
+  };
+
+  const handleRemoveDirRow = (index) => {
+    setFormDirectory(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Classified Ads helpers (Teil 4)
+  const handleUpdateAd = (index, field, value) => {
+    setFormAds(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddAd = () => {
+    setFormAds(prev => {
+      const nextLetter = String.fromCharCode(97 + prev.length);
+      return [...prev, { id: nextLetter, title: '', text: '' }];
+    });
+  };
+
+  const handleRemoveAd = (index) => {
+    setFormAds(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Sample data loader for plain text form
+  const handleLoadSample = () => {
+    setAddError('');
+    setAddSuccess('');
+    if (selectedTeil === 'lesen_teil1') {
+      setFormTitle('Neue Stadtbibliothek in Nürnberg eröffnet');
+      setFormCategory('zeitung');
+      setFormText(
+        'Gestern hat in Nürnberg die neue Stadtbibliothek ihre Türen für Besucher geöffnet. Auf vier Etagen finden Lesebegeisterte mehr als 200.000 Bücher, Zeitungen und digitale Medien.\n\nBesonders beliebt sind die modernen Arbeitsplätze mit schnellem Internet und gemütlichen Sesseln. Für Kinder gibt es einen eigenen Lesebereich mit bunten Kissen und Hörspielen.\n\nDie Bibliotheksleiterin Marion Weber freut sich über das große Interesse: „Schon am ersten Tag kamen über tausend Besucher. Unser Ziel ist es, einen Treffpunkt für alle Generationen zu schaffen.\"\n\nDer Eintritt ist kostenlos, ein Ausweis kostet nur 12 Euro im Jahr.'
+      );
+    } else if (selectedTeil === 'lesen_teil2') {
+      setFormTitle('Kaufhaus City-Galerie Wegweiser');
+      setFormDirectory([
+        { floor: '3. Stock', departments: 'Restaurant, Dachterrasse, Kundentoiletten, Wickelraum' },
+        { floor: '2. Stock', departments: 'Sportbekleidung, Fahrräder, Camping, Fitnessgeräte' },
+        { floor: '1. Stock', departments: 'Damen- und Herrenmode, Schuhe, Lederwaren, Schmuck' },
+        { floor: 'Erdgeschoss (EG)', departments: 'Information, Kosmetik, Parfümerie, Blumen, Bäcker' },
+        { floor: 'Untergeschoss (UG)', departments: 'Supermarkt, Drogerie, Apotheke, Parkhaus' }
+      ]);
+    } else if (selectedTeil === 'lesen_teil3') {
+      setFormSender('Lisa Hoffmann');
+      setFormRecipient('Stefan Meier');
+      setFormSubject('Einladung zu unserer Einweihungsfeier');
+      setFormText(
+        'Lieber Stefan,\n\nwir sind endlich in unsere neue Wohnung in der Schillerstraße umgezogen! Jetzt möchten wir das gerne mit unseren Freunden feiern.\n\nDie Party findet nächsten Samstag ab 18 Uhr statt. Für Essen und Getränke ist gesorgt, aber wenn du möchtest, kannst du gerne einen Salat oder Nachtisch mitbringen.\n\nGib mir bitte bis Donnerstag Bescheid, ob du kommen kannst.\n\nHerzliche Grüße,\nLisa'
+      );
+    } else if (selectedTeil === 'lesen_teil4') {
+      setFormTitle('Sport- und Freizeitangebote in Freiburg');
+      setFormAds([
+        { id: 'a', title: 'Yoga am See', text: 'Entspannung in der Natur. Jeden Samstag 10 Uhr am Seepark. Alle Level willkommen! Matten vorhanden.' },
+        { id: 'b', title: 'Fahrrad-Verleih & Touren', text: 'E-Bikes und Mountainbikes günstig mieten. Geführte Schwarzwald-Touren ab 25 €.' },
+        { id: 'c', title: 'Kanu-Club Breisgau', text: 'Paddeln auf der Dreisam. Anfängerkurse für Jugendliche und Erwachsene. Sa/So 14 Uhr.' },
+        { id: 'd', title: 'Kletterzentrum Süd', text: 'Große Kletter- und Boulderhalle. Schnupperkurse jeden Mittwoch 18 Uhr.' }
+      ]);
+    }
+  };
+
+  // Smart Paste Handler: parses raw pasted text into form fields
+  const handleExecuteSmartPaste = (rawText) => {
+    if (!rawText || !rawText.trim()) return;
+    const clean = rawText.trim();
+    setAddError('');
+    setAddSuccess('');
+
+    if (selectedTeil === 'lesen_teil1') {
+      const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        setFormTitle(lines[0]);
+        setFormText(lines.slice(1).join('\n\n'));
+      } else {
+        setFormText(clean);
+      }
+    } else if (selectedTeil === 'lesen_teil3') {
+      // Check for email header markers
+      let sender = '';
+      let recipient = '';
+      let subject = '';
+      const bodyLines = [];
+
+      clean.split('\n').forEach(line => {
+        const l = line.trim();
+        if (/^von:\s*/i.test(l)) sender = l.replace(/^von:\s*/i, '');
+        else if (/^an:\s*/i.test(l)) recipient = l.replace(/^an:\s*/i, '');
+        else if (/^betreff:\s*/i.test(l)) subject = l.replace(/^betreff:\s*/i, '');
+        else bodyLines.push(line);
+      });
+
+      if (sender) setFormSender(sender);
+      if (recipient) setFormRecipient(recipient);
+      if (subject) setFormSubject(subject);
+      
+      const bodyText = bodyLines.join('\n').trim();
+      if (!subject && bodyLines.length > 1) {
+        const firstLine = bodyLines.find(l => l.trim());
+        if (firstLine && !firstLine.toLowerCase().startsWith('liebe') && !firstLine.toLowerCase().startsWith('hallo')) {
+          setFormSubject(firstLine.trim());
+          setFormText(bodyText.replace(firstLine, '').trim());
+        } else {
+          setFormText(bodyText);
+        }
+      } else {
+        setFormText(bodyText);
+      }
+    } else if (selectedTeil === 'lesen_teil2') {
+      // Parse Floor lines like "1. Stock: Mode, Schuhe"
+      const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+      const rows = [];
+      let detectedTitle = formTitle || 'Kaufhaus Wegweiser';
+
+      lines.forEach((line, idx) => {
+        if (idx === 0 && !line.includes(':') && !/\d+\.\s*stock|eg|ug|erdgeschoss|untergeschoss/i.test(line)) {
+          detectedTitle = line;
+          return;
+        }
+        if (line.includes(':')) {
+          const parts = line.split(':');
+          rows.push({ floor: parts[0].trim(), departments: parts.slice(1).join(':').trim() });
+        } else if (line.includes('—') || line.includes('-')) {
+          const parts = line.split(/[-—]/);
+          rows.push({ floor: parts[0].trim(), departments: parts.slice(1).join('-').trim() });
+        } else {
+          rows.push({ floor: `Etage ${rows.length + 1}`, departments: line });
+        }
+      });
+
+      if (detectedTitle) setFormTitle(detectedTitle);
+      if (rows.length > 0) setFormDirectory(rows);
+    } else if (selectedTeil === 'lesen_teil4') {
+      // Split ads by double newlines or "Anzeige"
+      const blocks = clean.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+      if (blocks.length > 0) {
+        const newAds = blocks.map((block, idx) => {
+          const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+          const letter = String.fromCharCode(97 + idx);
+          if (lines.length > 1) {
+            return { id: letter, title: lines[0], text: lines.slice(1).join(' ') };
+          }
+          return { id: letter, title: `Anzeige ${letter.toUpperCase()}`, text: block };
+        });
+        setFormAds(newAds);
+      }
+    }
+
+    setShowSmartPasteModal(false);
+    setSmartPasteInput('');
+    setAddSuccess('✨ Auto-filled text into form fields successfully!');
+  };
+
+  const handleClearForm = () => {
+    setFormTitle('');
+    setFormText('');
+    setFormSender('');
+    setFormRecipient('');
+    setFormSubject('');
+    setNewTextJson('');
+    setAddError('');
+    setAddSuccess('');
+  };
+
   const handleAddText = async () => {
     setAddError('');
     setAddSuccess('');
-    try {
-      JSON.parse(newTextJson); // Validate client-side
-    } catch (e) {
-      setAddError(`Invalid JSON: ${e.message}`);
-      return;
+
+    let payloadString = '';
+
+    if (inputMode === 'json') {
+      if (!newTextJson.trim()) {
+        setAddError('Please enter a JSON text object or load the template.');
+        return;
+      }
+      try {
+        JSON.parse(newTextJson); // Validate client-side
+        payloadString = newTextJson;
+      } catch (e) {
+        setAddError(`Invalid JSON: ${e.message}`);
+        return;
+      }
+    } else {
+      // Plain text form mode validation and serialization
+      try {
+        if (selectedTeil === 'lesen_teil1') {
+          if (!formTitle.trim()) throw new Error('Please enter a title for the article.');
+          if (!formText.trim()) throw new Error('Please enter the article text.');
+          payloadString = JSON.stringify({
+            title: formTitle.trim(),
+            text: formText.trim(),
+            category: formCategory || 'zeitung'
+          });
+        } else if (selectedTeil === 'lesen_teil2') {
+          if (!formTitle.trim()) throw new Error('Please enter a building or mall title.');
+          const validRows = formDirectory.filter(r => r.floor.trim() && r.departments.trim());
+          if (validRows.length === 0) throw new Error('Please provide at least one floor with department information.');
+          payloadString = JSON.stringify({
+            title: formTitle.trim(),
+            directory: validRows
+          });
+        } else if (selectedTeil === 'lesen_teil3') {
+          if (!formSubject.trim() && !formTitle.trim()) throw new Error('Please enter a subject (Betreff).');
+          if (!formText.trim()) throw new Error('Please enter the letter/email text.');
+          payloadString = JSON.stringify({
+            sender: formSender.trim() || 'Unbekannt',
+            recipient: formRecipient.trim() || 'Freund/in',
+            subject: (formSubject || formTitle).trim(),
+            text: formText.trim()
+          });
+        } else if (selectedTeil === 'lesen_teil4') {
+          if (!formTitle.trim()) throw new Error('Please enter a category title for the classified ads.');
+          const validAds = formAds.filter(a => a.title.trim() || a.text.trim());
+          if (validAds.length === 0) throw new Error('Please add at least one classified ad.');
+          payloadString = JSON.stringify({
+            title: formTitle.trim(),
+            ads: validAds.map((a, idx) => ({
+              id: a.id || String.fromCharCode(97 + idx),
+              title: a.title.trim() || `Anzeige ${String.fromCharCode(65 + idx)}`,
+              text: a.text.trim()
+            }))
+          });
+        }
+      } catch (err) {
+        setAddError(err.message);
+        return;
+      }
     }
+
     try {
       const res = await fetch(`${apiBase}/pool_add_text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teil: selectedTeil, text_data: newTextJson }),
+        body: JSON.stringify({ teil: selectedTeil, text_data: payloadString }),
       });
       const data = await res.json();
       if (data.success) {
-        setAddSuccess(`Added! Pool now has ${data.count} texts.`);
-        setNewTextJson('');
+        setAddSuccess(`🎉 Successfully submitted! Pool now has ${data.count} certified texts.`);
+        handleClearForm();
         fetchTexts(selectedTeil);
         fetchStats();
       } else {
-        setAddError(data.error || 'Failed to add text.');
+        setAddError(data.error || 'Failed to add text to pool.');
       }
     } catch (e) {
       setAddError(`Network error: ${e.message}`);
@@ -478,34 +736,377 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
 
         {/* Right: Add New Text */}
         <div className="pool-add-section glass-panel">
-          <h3>➕ Add New Text to Pool</h3>
-          <p className="pool-add-subtext">
-            Add authentic CEFR A2 German material formatted in JSON to expand your exam question pool.
-          </p>
-          <div className="add-text-controls">
-            <button className="template-btn" onClick={loadTemplate}>
-              📋 Load Official {selectedTeil.replace('lesen_', 'Teil ').replace('teil', '')} Template
-            </button>
+          <div className="pool-add-header-row">
+            <div>
+              <h3>➕ Add New Text to Pool</h3>
+              <p className="pool-add-subtext">
+                Submit authentic CEFR A2 German material directly to expand your exam pool.
+              </p>
+            </div>
+            {/* Segmented Mode Selector */}
+            <div className="pool-mode-toggle">
+              <button
+                type="button"
+                className={`mode-toggle-btn ${inputMode === 'form' ? 'active' : ''}`}
+                onClick={() => setInputMode('form')}
+              >
+                📝 Text Form
+              </button>
+              <button
+                type="button"
+                className={`mode-toggle-btn ${inputMode === 'json' ? 'active' : ''}`}
+                onClick={() => setInputMode('json')}
+              >
+                ⚙️ Raw JSON
+              </button>
+            </div>
           </div>
-          <textarea
-            className="add-text-area"
-            value={newTextJson}
-            onChange={(e) => setNewTextJson(e.target.value)}
-            placeholder="Paste your JSON text object here, or click 'Load Template' above..."
-            rows={15}
-            spellCheck={false}
-          />
-          {addError && <div className="add-feedback error">{addError}</div>}
+
+          {/* Quick Action Toolbar */}
+          <div className="form-quick-actions">
+            {inputMode === 'form' ? (
+              <>
+                <button type="button" className="quick-action-btn sample" onClick={handleLoadSample}>
+                  💡 Load Sample A2 Text
+                </button>
+                <button type="button" className="quick-action-btn auto-extract" onClick={() => setShowSmartPasteModal(true)}>
+                  📋 Paste & Auto-Fill
+                </button>
+                <button type="button" className="quick-action-btn clear" onClick={handleClearForm}>
+                  🔄 Clear
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="template-btn" onClick={loadTemplate}>
+                  📋 Load {selectedTeil.replace('lesen_', 'Teil ').replace('teil', '')} JSON Template
+                </button>
+                <button type="button" className="quick-action-btn clear" onClick={() => setNewTextJson('')}>
+                  🔄 Clear
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* FORM MODE */}
+          {inputMode === 'form' && (
+            <div className="pool-form-body">
+              {/* TEIL 1: NEWSPAPER ARTICLE */}
+              {selectedTeil === 'lesen_teil1' && (
+                <div className="teil-form-container">
+                  <div className="pool-form-group">
+                    <label className="pool-form-label">
+                      <span>Article Title (Titel)</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="pool-form-input"
+                      placeholder="z.B. Mobilität im Wandel: Immer mehr Menschen fahren Fahrrad"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="pool-form-group">
+                    <label className="pool-form-label">
+                      <span>Category / Medium</span>
+                    </label>
+                    <div className="category-chips">
+                      {['zeitung', 'magazin', 'nachrichten', 'blog'].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          className={`cat-chip ${formCategory === cat ? 'active' : ''}`}
+                          onClick={() => setFormCategory(cat)}
+                        >
+                          {cat === 'zeitung' ? '📰 Zeitung' : cat === 'magazin' ? '📖 Magazin' : cat === 'nachrichten' ? '📢 Nachrichten' : '🌐 Blog'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pool-form-group">
+                    <div className="label-with-counter">
+                      <label className="pool-form-label">
+                        <span>German Article Text (Vollständiger Text)</span>
+                        <span className="required-star">*</span>
+                      </label>
+                      <span className="word-counter-badge">
+                        📊 {formText.trim() ? formText.trim().split(/\s+/).length : 0} words
+                      </span>
+                    </div>
+                    <textarea
+                      className="pool-form-textarea"
+                      placeholder="Fügen Sie hier den vollständigen deutschen Text ein..."
+                      value={formText}
+                      onChange={(e) => setFormText(e.target.value)}
+                      rows={10}
+                    />
+                    <span className="field-hint">💡 Recommendation for Goethe A2: 180–220 words across 2–4 paragraphs.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* TEIL 2: FLOOR DIRECTORY */}
+              {selectedTeil === 'lesen_teil2' && (
+                <div className="teil-form-container">
+                  <div className="pool-form-group">
+                    <label className="pool-form-label">
+                      <span>Store / Building Name (Kaufhaus Wegweiser)</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="pool-form-input"
+                      placeholder="z.B. Einkaufszentrum City-Galerie Wegweiser"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="pool-form-group">
+                    <div className="label-with-counter">
+                      <label className="pool-form-label">
+                        <span>Floor Directory Entries (Etagen & Abteilungen)</span>
+                        <span className="required-star">*</span>
+                      </label>
+                      <button type="button" className="add-mini-btn" onClick={handleAddDirRow}>
+                        ➕ Add Floor
+                      </button>
+                    </div>
+
+                    <div className="directory-rows-list">
+                      {formDirectory.map((row, rIdx) => (
+                        <div key={rIdx} className="directory-input-row">
+                          <input
+                            type="text"
+                            className="dir-floor-input"
+                            placeholder="z.B. 2. Stock / EG"
+                            value={row.floor}
+                            onChange={(e) => handleUpdateDirRow(rIdx, 'floor', e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="dir-depts-input"
+                            placeholder="Abteilungen (z.B. Damenmode, Schuhe, Taschen)"
+                            value={row.departments}
+                            onChange={(e) => handleUpdateDirRow(rIdx, 'departments', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="row-delete-btn"
+                            onClick={() => handleRemoveDirRow(rIdx)}
+                            title="Remove floor"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TEIL 3: EMAIL / LETTER */}
+              {selectedTeil === 'lesen_teil3' && (
+                <div className="teil-form-container">
+                  <div className="form-two-col">
+                    <div className="pool-form-group">
+                      <label className="pool-form-label">
+                        <span>Sender (Von)</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="pool-form-input"
+                        placeholder="z.B. Anna Schmidt"
+                        value={formSender}
+                        onChange={(e) => setFormSender(e.target.value)}
+                      />
+                    </div>
+                    <div className="pool-form-group">
+                      <label className="pool-form-label">
+                        <span>Recipient (An)</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="pool-form-input"
+                        placeholder="z.B. Markus Weber"
+                        value={formRecipient}
+                        onChange={(e) => setFormRecipient(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pool-form-group">
+                    <label className="pool-form-label">
+                      <span>Subject Line (Betreff)</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="pool-form-input"
+                      placeholder="z.B. Einladung zur Geburtstagsfeier am Samstag"
+                      value={formSubject}
+                      onChange={(e) => setFormSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="pool-form-group">
+                    <div className="label-with-counter">
+                      <label className="pool-form-label">
+                        <span>Email / Letter Text (Nachricht)</span>
+                        <span className="required-star">*</span>
+                      </label>
+                      <span className="word-counter-badge">
+                        📊 {formText.trim() ? formText.trim().split(/\s+/).length : 0} words
+                      </span>
+                    </div>
+                    <textarea
+                      className="pool-form-textarea"
+                      placeholder="Lieber Markus, ... (Schreiben Sie hier den deutschen Brief oder E-Mail-Text)"
+                      value={formText}
+                      onChange={(e) => setFormText(e.target.value)}
+                      rows={9}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* TEIL 4: CLASSIFIED ADS */}
+              {selectedTeil === 'lesen_teil4' && (
+                <div className="teil-form-container">
+                  <div className="pool-form-group">
+                    <label className="pool-form-label">
+                      <span>Category Title (Rubrik / Thema)</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="pool-form-input"
+                      placeholder="z.B. Sport und Freizeitangebote in Freiburg"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="pool-form-group">
+                    <div className="label-with-counter">
+                      <label className="pool-form-label">
+                        <span>Classified Ads (Kleinanzeigen)</span>
+                        <span className="required-star">*</span>
+                      </label>
+                      <button type="button" className="add-mini-btn" onClick={handleAddAd}>
+                        ➕ Add Ad
+                      </button>
+                    </div>
+
+                    <div className="ads-input-list">
+                      {formAds.map((ad, aIdx) => (
+                        <div key={aIdx} className="ad-card-input">
+                          <div className="ad-card-input-top">
+                            <span className="ad-badge-label">Anzeige {String(ad.id || String.fromCharCode(97 + aIdx)).toUpperCase()}</span>
+                            <input
+                              type="text"
+                              className="ad-title-input"
+                              placeholder="Ad Headline / Website (z.B. www.fitness-aktiv.de)"
+                              value={ad.title}
+                              onChange={(e) => handleUpdateAd(aIdx, 'title', e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className="row-delete-btn"
+                              onClick={() => handleRemoveAd(aIdx)}
+                              title="Remove ad"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <textarea
+                            className="ad-text-input"
+                            placeholder="Ad description text in German..."
+                            value={ad.text}
+                            onChange={(e) => handleUpdateAd(aIdx, 'text', e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* JSON MODE */}
+          {inputMode === 'json' && (
+            <div className="pool-json-body">
+              <textarea
+                className="add-text-area"
+                value={newTextJson}
+                onChange={(e) => setNewTextJson(e.target.value)}
+                placeholder="Paste your JSON text object here, or click 'Load Template' above..."
+                rows={14}
+                spellCheck={false}
+              />
+            </div>
+          )}
+
+          {addError && <div className="add-feedback error">⚠️ {addError}</div>}
           {addSuccess && <div className="add-feedback success">{addSuccess}</div>}
+
           <button
+            type="button"
             className="add-text-submit"
             onClick={handleAddText}
-            disabled={!newTextJson.trim()}
           >
-            ➕ Add Text to Pool
+            ➕ Submit Text to Pool
           </button>
         </div>
       </div>
+
+      {/* Smart Paste / Auto-Extract Modal */}
+      {showSmartPasteModal && (
+        <div className="modal-backdrop" onClick={() => setShowSmartPasteModal(false)}>
+          <div className="smart-paste-modal glass-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="quick-word-header">
+              <div className="quick-word-title-group">
+                <span className="quick-word-badge">✨ Smart Auto-Fill</span>
+                <h3>Paste Any German Text</h3>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowSmartPasteModal(false)}>✕</button>
+            </div>
+            <p className="smart-paste-desc">
+              Paste your raw German text below. The system will automatically detect the title, paragraphs, and structure for <strong>{TEIL_OPTIONS.find(o => o.value === selectedTeil)?.label}</strong>.
+            </p>
+            <textarea
+              className="smart-paste-textarea"
+              placeholder="Paste German article, email, or text here..."
+              value={smartPasteInput}
+              onChange={(e) => setSmartPasteInput(e.target.value)}
+              rows={10}
+              autoFocus
+            />
+            <div className="smart-paste-actions">
+              <button
+                type="button"
+                className="quick-word-btn primary"
+                disabled={!smartPasteInput.trim()}
+                onClick={() => handleExecuteSmartPaste(smartPasteInput)}
+              >
+                ✨ Auto-Fill Form Fields
+              </button>
+              <button
+                type="button"
+                className="quick-word-btn secondary"
+                onClick={() => setShowSmartPasteModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           QUICK WORD EXPLAINER MODAL / POPUP
