@@ -7,49 +7,11 @@ const TEIL_OPTIONS = [
   { value: 'lesen_teil4', label: 'Lesen Teil 4 — Classified Ads', icon: '📢', fields: ['title', 'ads'] },
 ];
 
-const TEIL_TEMPLATES = {
-  lesen_teil1: `{
-  "title": "Your article title in German",
-  "text": "Full German article text (180-220 words). Write the complete newspaper/magazine article here.",
-  "category": "zeitung"
-}`,
-  lesen_teil2: `{
-  "title": "Kaufhaus Name Wegweiser",
-  "directory": [
-    {"floor": "3. Stock", "departments": "Department 1, Department 2, Department 3"},
-    {"floor": "2. Stock", "departments": "Department 1, Department 2, Department 3"},
-    {"floor": "1. Stock", "departments": "Department 1, Department 2, Department 3"},
-    {"floor": "Erdgeschoss (EG)", "departments": "Department 1, Department 2, Department 3"},
-    {"floor": "Untergeschoss (UG)", "departments": "Department 1, Department 2, Department 3"}
-  ]
-}`,
-  lesen_teil3: `{
-  "title": "Lesen Teil 3: E-Mail / Brief",
-  "sender": "Name of sender",
-  "recipient": "Name of recipient",
-  "subject": "Email subject line",
-  "text": "Full email text in German (200-250 words). Start with 'Liebe/r ...' greeting."
-}`,
-  lesen_teil4: `{
-  "title": "Category title (e.g. Sport und Freizeit)",
-  "ads": [
-    {"id": "a", "title": "www.example1.de", "text": "Ad description text..."},
-    {"id": "b", "title": "www.example2.de", "text": "Ad description text..."},
-    {"id": "c", "title": "www.example3.de", "text": "Ad description text..."},
-    {"id": "d", "title": "www.example4.de", "text": "Ad description text..."},
-    {"id": "e", "title": "www.example5.de", "text": "Ad description text..."},
-    {"id": "f", "title": "www.example6.de", "text": "Ad description text..."}
-  ]
-}`,
-};
-
 export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
   const [selectedTeil, setSelectedTeil] = useState('lesen_teil1');
   const [texts, setTexts] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
-  // Input mode: 'form' (plain text, default) or 'json' (raw json)
-  const [inputMode, setInputMode] = useState('form');
 
   // Plain text form fields
   const [formTitle, setFormTitle] = useState('');
@@ -71,7 +33,6 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
   ]);
   const [showSmartPasteModal, setShowSmartPasteModal] = useState(false);
   const [smartPasteInput, setSmartPasteInput] = useState('');
-  const [newTextJson, setNewTextJson] = useState('');
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [expandedIndex, setExpandedIndex] = useState(0);
@@ -399,7 +360,6 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
     setFormSender('');
     setFormRecipient('');
     setFormSubject('');
-    setNewTextJson('');
     setAddError('');
     setAddSuccess('');
   };
@@ -410,63 +370,49 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
 
     let payloadString = '';
 
-    if (inputMode === 'json') {
-      if (!newTextJson.trim()) {
-        setAddError('Please enter a JSON text object or load the template.');
-        return;
+    // Plain text form validation and serialization
+    try {
+      if (selectedTeil === 'lesen_teil1') {
+        if (!formTitle.trim()) throw new Error('Please enter a title for the article.');
+        if (!formText.trim()) throw new Error('Please enter the article text.');
+        payloadString = JSON.stringify({
+          title: formTitle.trim(),
+          text: formText.trim(),
+          category: formCategory || 'zeitung'
+        });
+      } else if (selectedTeil === 'lesen_teil2') {
+        if (!formTitle.trim()) throw new Error('Please enter a building or mall title.');
+        const validRows = formDirectory.filter(r => r.floor.trim() && r.departments.trim());
+        if (validRows.length === 0) throw new Error('Please provide at least one floor with department information.');
+        payloadString = JSON.stringify({
+          title: formTitle.trim(),
+          directory: validRows
+        });
+      } else if (selectedTeil === 'lesen_teil3') {
+        if (!formSubject.trim() && !formTitle.trim()) throw new Error('Please enter a subject (Betreff).');
+        if (!formText.trim()) throw new Error('Please enter the letter/email text.');
+        payloadString = JSON.stringify({
+          sender: formSender.trim() || 'Unbekannt',
+          recipient: formRecipient.trim() || 'Freund/in',
+          subject: (formSubject || formTitle).trim(),
+          text: formText.trim()
+        });
+      } else if (selectedTeil === 'lesen_teil4') {
+        if (!formTitle.trim()) throw new Error('Please enter a category title for the classified ads.');
+        const validAds = formAds.filter(a => a.title.trim() || a.text.trim());
+        if (validAds.length === 0) throw new Error('Please add at least one classified ad.');
+        payloadString = JSON.stringify({
+          title: formTitle.trim(),
+          ads: validAds.map((a, idx) => ({
+            id: a.id || String.fromCharCode(97 + idx),
+            title: a.title.trim() || `Anzeige ${String.fromCharCode(65 + idx)}`,
+            text: a.text.trim()
+          }))
+        });
       }
-      try {
-        JSON.parse(newTextJson); // Validate client-side
-        payloadString = newTextJson;
-      } catch (e) {
-        setAddError(`Invalid JSON: ${e.message}`);
-        return;
-      }
-    } else {
-      // Plain text form mode validation and serialization
-      try {
-        if (selectedTeil === 'lesen_teil1') {
-          if (!formTitle.trim()) throw new Error('Please enter a title for the article.');
-          if (!formText.trim()) throw new Error('Please enter the article text.');
-          payloadString = JSON.stringify({
-            title: formTitle.trim(),
-            text: formText.trim(),
-            category: formCategory || 'zeitung'
-          });
-        } else if (selectedTeil === 'lesen_teil2') {
-          if (!formTitle.trim()) throw new Error('Please enter a building or mall title.');
-          const validRows = formDirectory.filter(r => r.floor.trim() && r.departments.trim());
-          if (validRows.length === 0) throw new Error('Please provide at least one floor with department information.');
-          payloadString = JSON.stringify({
-            title: formTitle.trim(),
-            directory: validRows
-          });
-        } else if (selectedTeil === 'lesen_teil3') {
-          if (!formSubject.trim() && !formTitle.trim()) throw new Error('Please enter a subject (Betreff).');
-          if (!formText.trim()) throw new Error('Please enter the letter/email text.');
-          payloadString = JSON.stringify({
-            sender: formSender.trim() || 'Unbekannt',
-            recipient: formRecipient.trim() || 'Freund/in',
-            subject: (formSubject || formTitle).trim(),
-            text: formText.trim()
-          });
-        } else if (selectedTeil === 'lesen_teil4') {
-          if (!formTitle.trim()) throw new Error('Please enter a category title for the classified ads.');
-          const validAds = formAds.filter(a => a.title.trim() || a.text.trim());
-          if (validAds.length === 0) throw new Error('Please add at least one classified ad.');
-          payloadString = JSON.stringify({
-            title: formTitle.trim(),
-            ads: validAds.map((a, idx) => ({
-              id: a.id || String.fromCharCode(97 + idx),
-              title: a.title.trim() || `Anzeige ${String.fromCharCode(65 + idx)}`,
-              text: a.text.trim()
-            }))
-          });
-        }
-      } catch (err) {
-        setAddError(err.message);
-        return;
-      }
+    } catch (err) {
+      setAddError(err.message);
+      return;
     }
 
     try {
@@ -505,12 +451,6 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
     } catch (e) {
       console.error('Failed to remove text:', e);
     }
-  };
-
-  const loadTemplate = () => {
-    setNewTextJson(TEIL_TEMPLATES[selectedTeil] || '');
-    setAddError('');
-    setAddSuccess('');
   };
 
   // Render complete structured text based on Teil type
@@ -743,54 +683,22 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
                 Submit authentic CEFR A2 German material directly to expand your exam pool.
               </p>
             </div>
-            {/* Segmented Mode Selector */}
-            <div className="pool-mode-toggle">
-              <button
-                type="button"
-                className={`mode-toggle-btn ${inputMode === 'form' ? 'active' : ''}`}
-                onClick={() => setInputMode('form')}
-              >
-                📝 Text Form
-              </button>
-              <button
-                type="button"
-                className={`mode-toggle-btn ${inputMode === 'json' ? 'active' : ''}`}
-                onClick={() => setInputMode('json')}
-              >
-                ⚙️ Raw JSON
-              </button>
-            </div>
           </div>
 
           {/* Quick Action Toolbar */}
           <div className="form-quick-actions">
-            {inputMode === 'form' ? (
-              <>
-                <button type="button" className="quick-action-btn sample" onClick={handleLoadSample}>
-                  💡 Load Sample A2 Text
-                </button>
-                <button type="button" className="quick-action-btn auto-extract" onClick={() => setShowSmartPasteModal(true)}>
-                  📋 Paste & Auto-Fill
-                </button>
-                <button type="button" className="quick-action-btn clear" onClick={handleClearForm}>
-                  🔄 Clear
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" className="template-btn" onClick={loadTemplate}>
-                  📋 Load {selectedTeil.replace('lesen_', 'Teil ').replace('teil', '')} JSON Template
-                </button>
-                <button type="button" className="quick-action-btn clear" onClick={() => setNewTextJson('')}>
-                  🔄 Clear
-                </button>
-              </>
-            )}
+            <button type="button" className="quick-action-btn sample" onClick={handleLoadSample}>
+              💡 Load Sample A2 Text
+            </button>
+            <button type="button" className="quick-action-btn auto-extract" onClick={() => setShowSmartPasteModal(true)}>
+              📋 Paste & Auto-Fill
+            </button>
+            <button type="button" className="quick-action-btn clear" onClick={handleClearForm}>
+              🔄 Clear
+            </button>
           </div>
 
-          {/* FORM MODE */}
-          {inputMode === 'form' && (
-            <div className="pool-form-body">
+          <div className="pool-form-body">
               {/* TEIL 1: NEWSPAPER ARTICLE */}
               {selectedTeil === 'lesen_teil1' && (
                 <div className="teil-form-container">
@@ -1035,22 +943,7 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* JSON MODE */}
-          {inputMode === 'json' && (
-            <div className="pool-json-body">
-              <textarea
-                className="add-text-area"
-                value={newTextJson}
-                onChange={(e) => setNewTextJson(e.target.value)}
-                placeholder="Paste your JSON text object here, or click 'Load Template' above..."
-                rows={14}
-                spellCheck={false}
-              />
-            </div>
-          )}
+          </div>
 
           {addError && <div className="add-feedback error">⚠️ {addError}</div>}
           {addSuccess && <div className="add-feedback success">{addSuccess}</div>}
