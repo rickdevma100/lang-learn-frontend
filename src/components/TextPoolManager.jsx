@@ -1049,10 +1049,32 @@ export default function TextPoolManager({ onBackToHome, onOpenWordExplainer }) {
                   <div className="meaning-text">{wordData.meaning}</div>
                 </div>
 
-                {wordData.example_sentence_german && (
-                  <div className="quick-word-example-box">
-                    <div className="example-german">{wordData.example_sentence_german}</div>
-                    <div className="example-english">{wordData.example_sentence_english}</div>
+                {((wordData.examples && wordData.examples.length > 0) || wordData.example_sentence_german) && (
+                  <div className="quick-word-examples-section">
+                    <div className="meaning-label">
+                      Examples {wordData.examples?.length > 1 ? `(${wordData.examples.length})` : ''}:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto' }}>
+                      {(wordData.examples && wordData.examples.length > 0
+                        ? wordData.examples
+                        : [{ german: wordData.example_sentence_german, english: wordData.example_sentence_english }]
+                      ).map((ex, idx) => (
+                        <div key={idx} className="quick-word-example-box">
+                          <div className="example-german" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                            <span>{idx + 1}. {ex.german}</span>
+                            <button
+                              className="quick-word-audio-btn"
+                              style={{ padding: '2px 6px', fontSize: '0.8rem', minWidth: 'auto' }}
+                              onClick={() => handlePlayWordAudio(ex.german)}
+                              title="Listen to example pronunciation"
+                            >
+                              🔊
+                            </button>
+                          </div>
+                          {ex.english && <div className="example-english" style={{ paddingLeft: '1rem' }}>{ex.english}</div>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

@@ -747,21 +747,28 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
 }
 
 .example-box {
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(255, 255, 255, 0.02);
   border-left: 4px solid var(--primary);
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.02);
-  border-right: 1px solid rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.example-box:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-left-color: var(--primary-light, #818cf8);
+  transform: translateX(3px);
 }
 
 .example-german {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .example-english {

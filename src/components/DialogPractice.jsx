@@ -317,16 +317,53 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
     }
   };
 
+  const normalizeWordData = (data) => {
+    if (!data) return data;
+    const normalized = { ...data };
+    let examples = [];
+    if (Array.isArray(normalized.examples) && normalized.examples.length > 0) {
+      examples = normalized.examples.map(ex => {
+        if (typeof ex === 'string') return { german: ex, english: '' };
+        return {
+          german: ex.german || ex.example_sentence_german || ex.example_german || '',
+          english: ex.english || ex.example_sentence_english || ex.example_english || ''
+        };
+      }).filter(ex => ex.german || ex.english);
+    } else if (normalized.example_sentence_german || normalized.example_sentence_english) {
+      examples = [{
+        german: normalized.example_sentence_german || '',
+        english: normalized.example_sentence_english || ''
+      }];
+    }
+    normalized.examples = examples;
+    if (!normalized.example_sentence_german && examples.length > 0) {
+      normalized.example_sentence_german = examples[0].german;
+      normalized.example_sentence_english = examples[0].english;
+    }
+    return normalized;
+  };
+
   const parsePartialJson = (str) => {
     const data = {
       word: '',
       part_of_speech: '',
       meaning: '',
+      examples: [],
       example_sentence_german: '',
       example_sentence_english: '',
       synonyms: []
     };
     let cleaned = str.trim().replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?\s*```$/, '').trim();
+
+    // Fast-path: if valid complete JSON object, parse directly
+    try {
+      if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+        const fullObj = JSON.parse(cleaned);
+        return normalizeWordData(fullObj);
+      }
+    } catch {
+      // Continue partial stream parsing
+    }
 
     const wordMatch = cleaned.match(/"word"\s*:\s*"([^"]*)"?/);
     if (wordMatch) data.word = wordMatch[1];
@@ -334,6 +371,27 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
     if (posMatch) data.part_of_speech = posMatch[1];
     const meaningMatch = cleaned.match(/"meaning"\s*:\s*"([^"]*)"?/);
     if (meaningMatch) data.meaning = meaningMatch[1];
+
+    // Parse array of examples
+    const examplesMatch = cleaned.match(/"examples"\s*:\s*\[([\s\S]*)/);
+    if (examplesMatch) {
+      const exStr = examplesMatch[1];
+      const objRegex = /\{([^}]+)\}/g;
+      let match;
+      while ((match = objRegex.exec(exStr)) !== null) {
+        const inner = match[1];
+        const gMatch = inner.match(/"(?:german|example_sentence_german|example_german)"\s*:\s*"([^"]*)"?/);
+        const eMatch = inner.match(/"(?:english|example_sentence_english|example_english)"\s*:\s*"([^"]*)"?/);
+        if (gMatch || eMatch) {
+          data.examples.push({
+            german: gMatch ? gMatch[1] : '',
+            english: eMatch ? eMatch[1] : ''
+          });
+        }
+      }
+    }
+
+    // Support single legacy example keys if present
     const exGerMatch = cleaned.match(/"example_sentence_german"\s*:\s*"([^"]*)"?/);
     if (exGerMatch) data.example_sentence_german = exGerMatch[1];
     const exEngMatch = cleaned.match(/"example_sentence_english"\s*:\s*"([^"]*)"?/) ||
@@ -341,6 +399,18 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
                        cleaned.match(/"example_sentence_english_translation"\s*:\s*"([^"]*)"?/) ||
                        cleaned.match(/"example_english"\s*:\s*"([^"]*)"?/);
     if (exEngMatch) data.example_sentence_english = exEngMatch[1];
+
+    if (data.examples.length === 0 && (data.example_sentence_german || data.example_sentence_english)) {
+      data.examples.push({
+        german: data.example_sentence_german,
+        english: data.example_sentence_english
+      });
+    }
+
+    if (data.examples.length > 0 && !data.example_sentence_german) {
+      data.example_sentence_german = data.examples[0].german;
+      data.example_sentence_english = data.examples[0].english;
+    }
 
     const synsMatch = cleaned.match(/"synonyms"\s*:\s*\[([\s\S]*)/);
     if (synsMatch) {
@@ -396,7 +466,16 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
                 return { ...parsed, _raw: newRaw, latency_s: prev?.latency_s || null };
               });
             } else if (event.type === 'done') {
-              setWordData((prev) => ({ ...prev, latency_s: event.latency_s }));
+              setWordData((prev) => {
+                let current = prev;
+                if (prev?._raw) {
+                  try {
+                    const fullObj = JSON.parse(prev._raw.trim().replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?\s*```$/, '').trim());
+                    current = { ...normalizeWordData(fullObj), _raw: prev._raw };
+                  } catch {}
+                }
+                return { ...current, latency_s: event.latency_s };
+              });
             }
           } catch (e) {
             console.error('Error parsing SSE line:', e);
@@ -414,7 +493,7 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
         if (fallbackRes.ok) {
           const data = await fallbackRes.json();
           if (data.error) throw new Error(data.error);
-          setWordData(data);
+          setWordData(normalizeWordData(data));
         }
       } catch (fallbackErr) {
         setWordError(fallbackErr.message || 'Failed to explain word.');
@@ -1138,19 +1217,31 @@ export default function DialogPractice({ onBackToHome, initialTab, initialWord }
                   <p className="meaning-text">{wordData.meaning || 'No description available.'}</p>
                 </div>
 
-                {(wordData.example_sentence_german || wordData.example_sentence_english) && (
+                {((wordData.examples && wordData.examples.length > 0) || wordData.example_sentence_german || wordData.example_sentence_english) && (
                   <div className="word-section">
-                    <h4 className="word-section-title">Example Usage</h4>
-                    <div className="example-box">
-                      {wordData.example_sentence_german && (
-                        <p className="example-german" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          {wordData.example_sentence_german}
-                          <WordTtsBtn text={wordData.example_sentence_german} />
-                        </p>
-                      )}
-                      {wordData.example_sentence_english && (
-                        <p className="example-english">{wordData.example_sentence_english}</p>
-                      )}
+                    <h4 className="word-section-title">
+                      Example Usage {wordData.examples && wordData.examples.length > 1 ? `(${wordData.examples.length})` : ''}
+                    </h4>
+                    <div className="examples-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {(wordData.examples && wordData.examples.length > 0
+                        ? wordData.examples
+                        : [{ german: wordData.example_sentence_german, english: wordData.example_sentence_english }]
+                      ).map((ex, idx) => (
+                        <div key={idx} className="example-box">
+                          {ex.german && (
+                            <p className="example-german" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', margin: 0 }}>
+                              <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                                <span className="example-number" style={{ opacity: 0.6, fontSize: '0.9em', fontWeight: 600 }}>{idx + 1}.</span>
+                                <span>{ex.german}</span>
+                              </span>
+                              <WordTtsBtn text={ex.german} />
+                            </p>
+                          )}
+                          {ex.english && (
+                            <p className="example-english" style={{ marginTop: '0.4rem', marginBottom: 0, paddingLeft: '1.4rem' }}>{ex.english}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
